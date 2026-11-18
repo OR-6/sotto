@@ -35,7 +35,6 @@ function browserInfo() {
   return {
     date: new Date().toISOString(),
     chromeMajor: chrome,
-    userAgent: navigator.userAgent,
     platform: uaData?.platform,
     cores: navigator.hardwareConcurrency,
     memoryGB: (navigator as { deviceMemory?: number }).deviceMemory,

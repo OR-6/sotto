@@ -2,12 +2,12 @@
   "browser": {
     "date": "2026-11-18T22:12:05.040Z",
     "chromeMajor": "156",
-    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Claude/6.6395.0 Chrome/156.0.8078.100 Safari/537.36",
     "platform": "macOS",
     "cores": 10,
     "memoryGB": 16,
     "appCheck": "debug-token",
-    "configMissing": []
+    "configMissing": [],
+    "note": "Embedded Chromium 156 browser on the same Mac, with the Prompt API present but no on-device model (availability: unavailable)."
   },
   "rows": [
     {
