@@ -74,6 +74,12 @@ export function renderChoose(root: HTMLElement, nav: Nav, begin: () => void): vo
     h('strong', {}, state.brief ? 'Brief ready' : 'Prepare first (optional)'),
     h('span', {}, state.brief ? (state.useBrief ? 'Sotto will use it during the conversation. Open to read or change it.' : 'Not in use. Open to turn it on.') : 'A brief from the cloud before you go: what will happen, the words you will hear, the questions to ask.'),
   );
+  const voiceCard = h(
+    'button',
+    { class: 'path', id: 'go-voice', onclick: () => nav.go('voice') },
+    h('strong', {}, state.voicePack ? (state.useVoice ? 'Your voice is on' : 'Your voice is off') : 'Your voice (optional)'),
+    h('span', {}, state.voicePack ? 'Say suggestions use how you talk. Open to see or change it.' : 'So Say suggestions sound like you: a few phrases you choose, built in the cloud, kept here.'),
+  );
   const beginBtn = h('button', { class: 'btn primary', id: 'begin' }, 'Begin');
   beginBtn.addEventListener('click', begin);
 
@@ -89,7 +95,7 @@ export function renderChoose(root: HTMLElement, nav: Nav, begin: () => void): vo
       h('span', { class: 'field-label', id: 'who-label' }, 'Who are you talking to?'),
       h('div', { class: 'row', role: 'group', 'aria-labelledby': 'who-label' }, whoChips),
       h('div', { style: 'margin-top:12px' }, whoInput),
-      h('div', { class: 'paths' }, prepareCard),
+      h('div', { class: 'paths' }, prepareCard, voiceCard),
       h('div', { class: 'row', style: 'margin-top:28px' }, beginBtn, h('button', { class: 'btn', onclick: () => nav.go('start') }, 'Back')),
     ),
   );

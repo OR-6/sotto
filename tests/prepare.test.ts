@@ -88,3 +88,23 @@ describe('summary', () => {
     expect(body.contents[0].parts[0].text).not.toContain('They:');
   });
 });
+
+describe('voice pack', () => {
+  it('sends only the chosen phrases and answers, ONLY_IN_CLOUD, and shapes the result', async () => {
+    const { buildVoicePack, voiceOutgoing } = await import('../src/ai/voice-pack');
+    const { toVoicePack, voiceDigest } = await import('../src/core/prompts/voice');
+    const a = { register: 'casual' as const, swearing: false, humour: 'dry' as const, greeting: 'Hiya', neverSay: 'lol' };
+    const shown = voiceOutgoing(['Alright, go on then.', 'Not a chance.', 'Give me a sec.'], a, 'gemini-3.5-flash-lite');
+    expect(shown.user).toContain('- Not a chance.');
+    expect(shown.user).toContain('I never say: lol');
+    expect(shown.mode).toBe('ONLY_IN_CLOUD');
+    const receipt = createReceipt();
+    await buildVoicePack(env.ai, ['Alright, go on then.', 'Not a chance.', 'Give me a sec.'], a, 'gemini-3.5-flash-lite', async (o) => o.user === shown.user, receipt).catch(() => undefined);
+    expect(JSON.parse(net.sent.at(-1)!.body).contents[0].parts[0].text).toBe(shown.user);
+    const pack = toVoicePack({ style: 'Short, dry, warm.', phrases: { yes: ['Go on then', 42], no: ['Not a chance'] } })!;
+    expect(pack.phrases.yes).toEqual(['Go on then', '42']);
+    expect(pack.phrases.greetings).toEqual([]);
+    expect(voiceDigest(pack).split(/\s+/).length).toBeLessThanOrEqual(120);
+    expect(toVoicePack({})).toBeNull();
+  });
+});

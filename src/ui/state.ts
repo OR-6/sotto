@@ -6,6 +6,7 @@ import { QUICK_PHRASES } from '../core/filter';
 import { createReceipt } from '../core/receipt';
 import type { Answer } from '../core/stats';
 import type { Brief } from '../core/prompts/prepare';
+import type { VoicePack } from '../core/prompts/voice';
 import type { SpeechState } from '../speech/recognise';
 import { load, save } from './store';
 
@@ -65,6 +66,8 @@ export const state = {
   /** Flags pinned in Ask this session (memory only). */
   flags: [] as { kind: string; quote: string }[],
   useBrief: false,
+  voicePack: null as VoicePack | null,
+  useVoice: false,
   answers: [] as Answer[],
 };
 

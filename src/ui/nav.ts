@@ -1,5 +1,5 @@
 // What screens can ask the app shell to do.
-export type Screen = 'start' | 'choose' | 'prepare' | 'session' | 'replay' | 'summary';
+export type Screen = 'start' | 'choose' | 'prepare' | 'session' | 'replay' | 'summary' | 'voice';
 
 export type Nav = {
   go(screen: Screen): void;

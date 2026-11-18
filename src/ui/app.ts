@@ -18,6 +18,10 @@ import { renderSession, type SessionView } from './session';
 import { renderStart } from './start';
 import { renderPrepare } from './prepare';
 import { renderSummary } from './summary';
+import { loadVoice, renderVoice } from './voice';
+import { composeSay } from '../core/compose';
+import { parseJson, filterSay } from '../core/filter';
+import { voiceDigest } from '../core/prompts/voice';
 import { loadReplays, renderReplayList } from './replay';
 import type { Replay } from '../core/replay';
 import { applyTheme, state } from './state';
@@ -90,6 +94,7 @@ function go(screen: Screen) {
   else if (screen === 'prepare') (void ensureConfig(), renderPrepare(root, nav, aiPair));
   else if (screen === 'session') startSession();
   else if (screen === 'replay') renderReplayList(root, nav, replays);
+  else if (screen === 'voice') (void ensureConfig(), renderVoice(root, nav, { cloud: () => getCloud().ai, compare: hasDevice() ? compareVoice : undefined }));
   else if (screen === 'summary') (void ensureConfig(), renderSummary(root, aiPair, { turns: live?.turns ?? [], flags: state.flags }, () => (resetSession(), go('choose'))));
   const main = root.querySelector('main');
   if (main) {
@@ -131,7 +136,7 @@ function startSession() {
     tone: state.settings.tone,
     joke: state.settings.joke,
     brief: [state.useBrief && state.brief ? state.brief.digest : '', state.situationText ? '' : (pack?.digest ?? '')].filter(Boolean).join(' '),
-    voice: '',
+    voice: state.useVoice && state.voicePack ? voiceDigest(state.voicePack) : '',
   };
   view = renderSession({
     live,
@@ -157,6 +162,20 @@ function startSession() {
   }
 }
 
+/** The voice pack's before/after: the same line, Say on device without and with the digest. */
+async function compareVoice(voice: string) {
+  const line = 'So what did you get up to this weekend?';
+  const ctx = { situation: 'Family', partner: 'my sister', tone: state.settings.tone, joke: false, brief: '', voice: '', turns: [{ id: 1, who: 'P' as const, text: line, at: 0, via: 'typed' as const }], budgetChars: 3000 };
+  const run = async (v: string) => {
+    const r = await getPrivate().say(composeSay({ ...ctx, voice: v }, ''), () => undefined, new AbortController().signal);
+    state.receipt.recordDevice({ step: v ? 'voice after' : 'voice before', mode: 'ONLY_ON_DEVICE', ms: r.ms });
+    return filterSay(parseJson(r.text), line).options.map((o) => o.text);
+  };
+  const before = await run('');
+  const after = await run(voice);
+  return { line, before, after };
+}
+
 /** Ends a conversation: what was said is dropped from memory. */
 function resetSession() {
   live?.clear();
@@ -167,6 +186,7 @@ function resetSession() {
 
 export async function boot(container: HTMLElement): Promise<void> {
   applyTheme();
+  loadVoice();
   banner = h('div', { class: 'cloud-banner', id: 'cloud-banner', role: 'alert', hidden: true });
   root = h('div', { id: 'screen' });
   container.replaceChildren(banner, root, h('div', { id: 'announcer', class: 'sr-only', 'aria-live': 'polite' }));
