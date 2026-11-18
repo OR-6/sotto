@@ -2,6 +2,7 @@
 import { h } from './dom';
 import { state, saveSettings } from './state';
 import type { Nav } from './nav';
+import { openSettings } from './settings';
 
 export function capabilityLines(): HTMLElement {
   const line = (ok: 'yes' | 'wait' | 'no', text: string) => h('div', { class: 'cap-line' }, h('span', { class: `cap-dot ${ok}`, 'aria-hidden': 'true' }), h('span', {}, text));
@@ -82,6 +83,7 @@ export function renderStart(root: HTMLElement, nav: Nav): void {
         'p',
         { class: 'footer-line' },
         h('span', {}, 'Sotto restates and asks. It does not advise.'),
+        h('button', { class: 'linkish', id: 'open-settings', onclick: () => void openSettings(() => nav.go('start')) }, 'Settings'),
         h('button', { class: 'linkish', onclick: () => nav.openReceipt() }, 'Receipt'),
         h('a', { href: 'https://github.com/OR-6/sotto', rel: 'noopener' }, 'How it works'),
       ),

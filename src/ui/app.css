@@ -348,3 +348,16 @@ pre.outgoing.small { font-size: 14px; color: var(--muted); margin-top: 8px; }
 .brief-card dl { margin: 0; }
 .brief-card dt { font-weight: 700; margin-top: 6px; }
 .brief-card dd { margin: 0 0 4px; color: var(--muted); }
+
+/* ---------- settings ---------- */
+.settings h3 { font-size: 20px; margin: 24px 0 6px; }
+.settings h3:first-child { margin-top: 0; }
+.setting { border: 0; padding: 0; margin: 10px 0; }
+.setting legend { font-size: 15px; color: var(--muted); margin-bottom: 6px; }
+.radio { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 14px; border: 1px solid var(--rim-strong); border-radius: 999px; cursor: pointer; }
+.radio input { width: 20px; height: 20px; accent-color: var(--amber); margin: 0; }
+.radio:has(input:checked) { border-color: var(--amber); background: var(--amber-soft); }
+.setting-toggle { margin: 12px 0; }
+.settings input[type='range'] { width: min(360px, 100%); accent-color: var(--amber); min-height: 44px; }
+.settings select.text-input { width: auto; max-width: 100%; }
+textarea.text-input { padding: 12px 16px; min-height: 140px; resize: vertical; }

@@ -11,6 +11,7 @@ import { speak, stopSpeaking } from '../speech/speak';
 import { announce, formatBytes, h, setText } from './dom';
 import { state, saveSettings } from './state';
 import { createScanner } from './scan';
+import { openSettings } from './settings';
 
 export type SessionDeps = {
   live: Live;
@@ -97,6 +98,12 @@ export function renderSession(deps: SessionDeps): SessionView {
   const receiptBtn = h('button', { class: 'btn small', id: 'open-receipt' }, 'Receipt');
   const scanBtn = h('button', { class: 'btn small', id: 'scan-toggle', 'aria-pressed': 'false', title: 'Switch scanning: or hold Space for one second' }, 'Scan');
   const endBtn = h('button', { class: 'btn small', id: 'end' }, 'End');
+  const settingsBtn = h('button', { class: 'btn small', id: 'session-settings', 'aria-label': 'Settings' }, 'Settings');
+  settingsBtn.addEventListener('click', () => void openSettings(() => {
+    scanner.setRate(state.settings.scanRateMs);
+    live.chips.tone = state.settings.tone;
+    live.chips.joke = state.settings.joke;
+  }));
   const where = h('span', { class: `where${state.cloudLive ? ' cloud' : ''}`, id: 'where' }, state.cloudLive ? 'Cloud live mode' : 'Private mode');
   where.title = state.cloudLive ? 'Live lines may be sent to the cloud this session' : 'Live help runs on this device; nothing said here is sent';
   const situation = state.situationText || packById(state.pack)?.label || 'Conversation';
@@ -112,6 +119,7 @@ export function renderSession(deps: SessionDeps): SessionView {
     state.speech === 'available' ? h('span', { class: 'listen-state', role: 'status' }, pulse, listenLabel) : null,
     state.speech === 'available' ? listenBtn : null,
     scanBtn,
+    settingsBtn,
     receiptBtn,
     endBtn,
   );
