@@ -69,3 +69,22 @@ describe('prepare', () => {
     expect(receipt.bytesOut).toBe(0);
   });
 });
+
+describe('summary', () => {
+  it('sends only the ticked lines, in order, exactly as shown', async () => {
+    const { summariseInCloud, summaryOutgoing } = await import('../src/ai/summary');
+    const { toSummary } = await import('../src/core/prompts/summary');
+    expect(toSummary({ summary: '' })).toBeNull();
+    const lines = [
+      { kind: 'Flagged' as const, text: 'deadline: sign by Friday' },
+      { kind: 'Me' as const, text: 'Can I see it in writing?' },
+    ];
+    const shown = summaryOutgoing(lines, 'gemini-3.5-flash-lite');
+    expect(shown.user).toBe('Flagged: deadline: sign by Friday\nMe: Can I see it in writing?');
+    const receipt = createReceipt();
+    await summariseInCloud(env.ai, lines, 'gemini-3.5-flash-lite', async (o) => o.user === shown.user, receipt).catch(() => undefined);
+    const body = JSON.parse(net.sent.at(-1)!.body);
+    expect(body.contents[0].parts[0].text).toBe(shown.user);
+    expect(body.contents[0].parts[0].text).not.toContain('They:');
+  });
+});

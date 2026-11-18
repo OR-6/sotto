@@ -17,6 +17,7 @@ import { renderChoose } from './choose';
 import { renderSession, type SessionView } from './session';
 import { renderStart } from './start';
 import { renderPrepare } from './prepare';
+import { renderSummary } from './summary';
 import { loadReplays, renderReplayList } from './replay';
 import type { Replay } from '../core/replay';
 import { applyTheme, state } from './state';
@@ -73,6 +74,7 @@ function go(screen: Screen) {
   else if (screen === 'prepare') renderPrepare(root, nav, ai);
   else if (screen === 'session') startSession();
   else if (screen === 'replay') renderReplayList(root, nav, replays);
+  else if (screen === 'summary') renderSummary(root, ai, { turns: live?.turns ?? [], flags: state.flags }, () => (resetSession(), go('choose')));
   const main = root.querySelector('main');
   if (main) {
     main.setAttribute('tabindex', '-1');
@@ -111,16 +113,9 @@ function startSession() {
     openReceipt: () => openReceipt(),
     onEnd: () =>
       openStats(
-        () => {
-          live?.clear();
-          state.answers = [];
-          go('choose');
-        },
-        () => {
-          live?.clear();
-          state.answers = [];
-          go('start');
-        },
+        () => (resetSession(), go('choose')),
+        () => (resetSession(), go('start')),
+        live && live.turns.length ? () => go('summary') : undefined,
       ),
   });
   root.replaceChildren(view.el);
@@ -131,6 +126,13 @@ function startSession() {
       .then((ms) => ((state.warmMs = ms), view?.refreshReceipt()))
       .catch(() => undefined);
   }
+}
+
+/** Ends a conversation: what was said is dropped from memory. */
+function resetSession() {
+  live?.clear();
+  state.answers = [];
+  state.flags.length = 0;
 }
 
 export async function boot(container: HTMLElement): Promise<void> {

@@ -369,3 +369,8 @@ textarea.text-input { padding: 12px 16px; min-height: 140px; resize: vertical; }
 /* ---------- replay ---------- */
 .replay-label { display: inline-block; border: 2px solid var(--cool); color: var(--cool); border-radius: 999px; padding: 6px 14px; font-weight: 700; font-size: 15px; margin-bottom: 16px; }
 .replay .option { cursor: default; }
+
+/* ---------- summary ---------- */
+.tick-list { list-style: none; padding: 0; margin: 12px 0; display: grid; gap: 4px; max-height: 44vh; overflow: auto; border: 1px solid var(--rim); border-radius: var(--radius); padding: 8px 12px; }
+.tick-list .consent { margin: 4px 0; }
+#summary-result { display: grid; gap: 12px; margin-top: 12px; }

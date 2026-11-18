@@ -58,6 +58,8 @@ export const state = {
   replays: 0,
   receipt: createReceipt(),
   brief: null as Brief | null,
+  /** Flags pinned in Ask this session (memory only). */
+  flags: [] as { kind: string; quote: string }[],
   useBrief: false,
   answers: [] as Answer[],
 };

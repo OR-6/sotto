@@ -270,7 +270,7 @@ export function renderSession(deps: SessionDeps): SessionView {
   const decisionsCount = h('span', {}, 'Decisions and deadlines (0)');
   const decisions = h('details', { class: 'decisions', id: 'decisions' }, h('summary', {}, decisionsCount), decisionsList);
   const askPanel = h('section', { id: 'ask-panel', 'aria-label': 'Ask', hidden: true }, askLast, meansCard, askCard, flagEl, h('div', { class: 'row' }, sayQuestion, repeatBtn), repeatLine, decisions);
-  const flags: { kind: string; quote: string }[] = [];
+  const flags = state.flags;
   sayQuestion.addEventListener('click', () => askBody.textContent && say(askBody.textContent, 'option'));
   repeatBtn.addEventListener('click', async () => {
     if (!deps.helpers) return;
