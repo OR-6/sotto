@@ -24,6 +24,8 @@ export type Settings = {
   /** Switch scanning: on at session start, and the step time. */
   scan: boolean;
   scanRateMs: number;
+  /** Single-key shortcuts (1, 2, 3, H, /). Can be switched off (WCAG 2.1.4). */
+  shortcuts: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -38,6 +40,7 @@ export const DEFAULT_SETTINGS: Settings = {
   allHeardIsPartner: true,
   scan: false,
   scanRateMs: 1200,
+  shortcuts: true,
 };
 
 export const state = {

@@ -17,7 +17,14 @@ export function renderChoose(root: HTMLElement, nav: Nav, begin: () => void): vo
     return b;
   };
   const sayCard = modeCard('say', 'Say', 'I cannot speak, or not fast enough.', 'Three things to say next, spoken aloud in one tap.');
-  const askCard = modeCard('ask', 'Ask', 'I am out of my depth.', 'What the last sentence meant, and the question to ask next.');
+  const askCard = modeCard('ask', 'Ask', 'I am out of my depth.', state.device === 'available' || state.cloudLive ? 'What the last sentence meant, and the question to ask next.' : 'Needs the on-device model, or Cloud live mode, on this browser.');
+  if (!(state.device === 'available' || state.cloudLive)) {
+    askCard.disabled = true;
+    askCard.classList.add('dim');
+    state.mode = 'say';
+    sayCard.setAttribute('aria-pressed', 'true');
+  }
+  const askAllowed = !askCard.disabled;
 
   const custom = h('input', { class: 'text-input', id: 'situation-text', placeholder: 'Or type it: knee results with the orthopaedist', maxlength: 120, value: state.situationText, 'aria-label': 'Describe the situation' });
   const whoInput = h('input', { class: 'text-input', id: 'who-text', placeholder: 'Someone else', maxlength: 60, 'aria-label': 'Who you are talking to' });
@@ -29,7 +36,7 @@ export function renderChoose(root: HTMLElement, nav: Nav, begin: () => void): vo
       state.situationText = '';
       custom.value = '';
       state.partnerLabel = p.partner;
-      if (!touchedMode) {
+      if (!touchedMode && (p.mode === 'say' || askAllowed)) {
         state.mode = p.mode;
         sayCard.setAttribute('aria-pressed', String(state.mode === 'say'));
         askCard.setAttribute('aria-pressed', String(state.mode === 'ask'));

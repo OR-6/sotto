@@ -1,7 +1,7 @@
 // The app shell: boot, capability, screens, the Cloud live switch.
 import { readDeviceState } from '../ai/capability';
 import { createCloudLiveBackend, setCloudLive, cloudState } from '../ai/cloud';
-import { createLive, type Live } from '../ai/live';
+import { createLive, type Live, type LiveBackend } from '../ai/live';
 import { createPrivateBackend, type PrivateBackend } from '../ai/private-backend';
 import { loadConfig } from '../config';
 import { packById } from '../core/packs/packs';
@@ -105,10 +105,21 @@ async function begin() {
   go('session');
 }
 
+/** Private mode on a browser without the model: phrases, Hold on and typing still speak; no suggestions. */
+const NO_MODEL: LiveBackend = {
+  mode: 'NONE',
+  say: () => Promise.reject(new Error('this browser cannot make suggestions')),
+  ask: () => Promise.reject(new Error('this browser cannot explain lines')),
+};
+
+const hasDevice = () => state.device === 'available';
+
 function startSession() {
   const backend = state.cloudLive
     ? createCloudLiveBackend(getCloud().ai, state.config.cloudModel, state.receipt, { saySystem: SAY_SYSTEM, saySchema: SAY_SCHEMA, askSystem: ASK_SYSTEM, askSchema: ASK_SCHEMA })
-    : getPrivate();
+    : hasDevice()
+      ? getPrivate()
+      : NO_MODEL;
   live ??= createLive({ backend, receipt: state.receipt, budgetChars: state.config.maxContextTokens * 3 });
   live.setBackend(backend);
   const pack = packById(state.pack);
@@ -122,7 +133,8 @@ function startSession() {
   };
   view = renderSession({
     live,
-    helpers: state.cloudLive ? undefined : getPrivate(),
+    helpers: state.cloudLive || !hasDevice() ? undefined : getPrivate(),
+    suggestions: state.cloudLive || hasDevice(),
     phrases: state.phrases,
     openReceipt: () => openReceipt(),
     onEnd: () =>

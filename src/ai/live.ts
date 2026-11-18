@@ -61,6 +61,9 @@ export type Live = {
 };
 
 
+/** Speech finals this close together are one turn (a pause mid-sentence is not a new turn). */
+export const MERGE_MS = 1500;
+
 export function createLive(opts: LiveOptions): Live {
   const now = opts.now ?? (() => Date.now());
   let backend = opts.backend;
@@ -78,6 +81,15 @@ export function createLive(opts: LiveOptions): Live {
     mode: 'say',
     chips: { situation: '', partner: '', tone: 'neutral', joke: false, brief: '', voice: '' },
     partner(text, via = 'typed') {
+      // Speech that resumes within 1.5 s of a final result is the same sentence: merge, do not start a new turn.
+      const prev = turns.at(-1);
+      if (via === 'speech' && prev && prev.who === 'P' && prev.via === 'speech' && now() - prev.at < MERGE_MS) {
+        const merged: Turn = { ...prev, text: cleanLine(`${prev.text} ${text}`).slice(0, 1200), at: now() };
+        turns = [...turns.slice(0, -1), merged];
+        emit({ type: 'turn', turn: merged });
+        run();
+        return merged;
+      }
       const t = add('P', text, via);
       if (t) {
         steerWords = '';

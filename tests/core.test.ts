@@ -92,11 +92,14 @@ describe('filterSay', () => {
     expect(f.padded).toBe(0);
     expect(f.dropped).toEqual([]);
   });
-  it('drops advice, meta talk, echoes and over-long options, then pads', () => {
+  it('keeps the user\'s own strong words; drops meta talk, echoes and over-long options, then pads with labelled filler', () => {
+    const own = filterSay({ options: [{ text: 'I want to stop taking these pills', kind: 'answer' }, { text: 'You need to call my wife now', kind: 'alternative' }, { text: 'Who can I talk to?', kind: 'question' }] }, 'Is there anyone we should call?');
+    expect(own.dropped).toEqual([]);
+    expect(own.options.map((o) => o.text)).toContain('You need to call my wife now');
     const f = filterSay(
       {
         options: [
-          { text: 'You should take two tablets now', kind: 'answer' },
+          { text: 'As an AI language model I agree', kind: 'answer' },
           { text: 'As an AI I cannot help with that', kind: 'alternative' },
           { text: 'the mri shows a partial tear of the medial meniscus', kind: 'question' },
           { text: 'word '.repeat(20), kind: 'answer' },
@@ -104,9 +107,10 @@ describe('filterSay', () => {
       },
       'The MRI shows a partial tear of the medial meniscus.',
     );
-    expect(f.dropped.map((d) => d.why)).toEqual(['directive or advice', 'talks about itself', 'repeats the partner', 'too long']);
+    expect(f.dropped.map((d) => d.why)).toEqual(['talks about itself', 'talks about itself', 'repeats the partner', 'too long']);
     expect(f.options).toHaveLength(3);
     expect(f.padded).toBe(3);
+    expect(f.options.every((o) => o.filler)).toBe(true);
   });
   it('tidies quotes and list markers', () => {
     expect(tidy('1. "Yes, please"')).toBe('Yes, please');

@@ -108,7 +108,7 @@ async function run() {
         await shot(page, dir, '01-start-no-model');
         if (full) {
           check(await page.isVisible('text=This browser cannot run the on-device model.'), 'no-model browser is told plainly');
-          check(await page.isDisabled('#start'), 'Start is disabled without the model (no silent cloud fallback)');
+          check((await page.textContent('#start')) === 'Start with phrases and typing', 'without the model, Start offers phrases and typing (no silent cloud fallback)');
           check(await page.isVisible('text=Never for cheating or recording anyone.'), 'the stance is on the first screen');
           await axe(page, `start (no model) ${tag}`);
         }
@@ -119,6 +119,19 @@ async function run() {
         await shot(page, dir, '02-cloud-live-confirm');
         if (full) await axe(page, `cloud confirm ${tag}`);
         await page.click('#cloud-no');
+        if (full) {
+          // A session with no model: phrases, Hold on and typing still speak; nothing is sent.
+          await page.click('#start');
+          await page.waitForSelector('#begin');
+          check(await page.isDisabled('#mode-ask'), 'Ask is unavailable without a model');
+          await page.click('#begin');
+          await page.waitForSelector('#empty-say');
+          check((await page.textContent('#empty-say')).includes('cannot make suggestions'), 'the no-model session says plainly that there are no suggestions');
+          await page.click('#quick button:first-child');
+          check((await page.textContent('#partner-said')) === 'Yes', 'a quick phrase speaks without any model');
+          await shot(page, dir, '02b-no-model-session');
+          await axe(page, `no-model session ${tag}`);
+        }
         check(aiRequests.length === 0, `no AI request without consent to Cloud live (${tag})`);
         check(errors.length === 0, `no page errors (${tag}, no model)${errors.length ? ': ' + errors.join(' | ') : ''}`);
         await ctx.close();

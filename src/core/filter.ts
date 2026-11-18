@@ -89,7 +89,7 @@ export function sayOptionWhy(text: string, partnerLine: string): string {
   if (!text) return 'empty';
   if (n < SAY_MIN_WORDS) return 'too short';
   if (n > SAY_MAX_WORDS) return 'too long';
-  if (DIRECTIVE.test(text)) return 'directive or advice';
+  // No advice rule here: these are the user's own words to choose ("I want to stop taking these").
   if (META.test(text)) return 'talks about itself';
   if (partnerLine && longestSharedRun(text, partnerLine) > 6) return 'repeats the partner';
   return '';
@@ -127,13 +127,13 @@ export function filterSay(raw: unknown, partnerLine: string): SayFiltered {
     if (out.length >= 3) break;
     if (out.some((o) => o.kind === kind)) continue;
     const text = PAD[kind].find((p) => !out.some((o) => norm(o.text) === norm(p))) ?? PAD[kind][0];
-    out.push({ text, kind });
+    out.push({ text, kind, filler: true });
     padded++;
   }
   while (out.length < 3) {
     const kind = SAY_KINDS[out.length];
     const text = [...PAD[kind], ...PAD.answer, ...PAD.alternative, ...PAD.question].find((p) => !out.some((o) => norm(o.text) === norm(p))) ?? 'Let me think';
-    out.push({ text, kind });
+    out.push({ text, kind, filler: true });
     padded++;
   }
   return { options: out.slice(0, 3), dropped, padded };

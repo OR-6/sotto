@@ -28,14 +28,14 @@ export function renderStart(root: HTMLElement, nav: Nav): void {
   const canPrivate = state.device === 'available' || state.device === 'downloadable' || state.device === 'downloading';
   const consent = h('input', { type: 'checkbox', id: 'consent', checked: state.settings.consent });
   const status = h('p', { class: 'note-line', role: 'status' });
-  const startBtn = h('button', { class: 'btn primary', id: 'start', disabled: !state.settings.consent || !canPrivate }, state.device === 'available' ? 'Start' : canPrivate ? 'Get ready and start' : 'Start');
+  const startBtn = h('button', { class: 'btn primary', id: 'start', disabled: !state.settings.consent }, state.device === 'available' ? 'Start' : canPrivate ? 'Get ready and start' : 'Start with phrases and typing');
   consent.addEventListener('change', () => {
     saveSettings({ consent: consent.checked });
-    startBtn.disabled = !consent.checked || !canPrivate;
+    startBtn.disabled = !consent.checked;
     cloudBtn.disabled = !consent.checked;
   });
   startBtn.addEventListener('click', async () => {
-    if (state.device !== 'available') {
+    if (canPrivate && state.device !== 'available') {
       startBtn.disabled = true;
       status.textContent = 'Getting the on-device model ready. This happens once.';
       try {
@@ -76,7 +76,7 @@ export function renderStart(root: HTMLElement, nav: Nav): void {
       ),
       capabilityLines(),
       h('label', { class: 'consent', for: 'consent' }, consent, h('span', {}, 'I will tell the people I talk to that Sotto is listening on this device. It records nothing.')),
-      h('div', { class: 'row' }, startBtn, !canPrivate ? h('span', { class: 'muted' }, 'Private mode needs desktop Chrome with the on-device model.') : null),
+      h('div', { class: 'row' }, startBtn, !canPrivate ? h('span', { class: 'muted' }, 'Suggestions in Private mode need desktop Chrome with the on-device model. Phrases, Hold on and typing work anywhere.') : null),
       status,
       paths,
       h(

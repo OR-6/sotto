@@ -107,6 +107,23 @@ describe('live loop', () => {
     expect(receipt.steps.at(-1)).toMatchObject({ where: 'failed', bytesOut: 0 });
   });
 
+  it('merges speech that resumes within 1.5 s into the same partner turn', async () => {
+    const { live, say, until } = setup();
+    live.partner('What can I', 'speech');
+    live.partner('get you today?', 'speech');
+    await until((x) => x.type === 'say');
+    expect(live.turns).toHaveLength(1);
+    expect(live.turns[0].text).toBe('What can I get you today?');
+    expect(say.prompts.at(-1)).toContain('P: What can I get you today?');
+  });
+
+  it('typed lines are never merged', () => {
+    const { live } = setup();
+    live.partner('One', 'typed');
+    live.partner('Two', 'typed');
+    expect(live.turns).toHaveLength(2);
+  });
+
   it('ignores empty input', () => {
     const { live } = setup();
     expect(live.partner('   ')).toBeUndefined();

@@ -30,23 +30,59 @@ describe('switch scanning', () => {
     const { s, clicks, key } = setup();
     s.start();
     vi.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(0);
     key('keydown');
     key('keyup');
     expect(clicks).toEqual(['d']);
     expect(document.querySelector('.scan')?.id).toBe('a');
     s.dispose();
   });
-  it('holding Space for a second turns scanning on and off', () => {
+  it('holding Space for a second turns scanning on; a slow release while scanning never turns it off', () => {
     const { s, key, clicks } = setup();
     key('keydown');
     vi.advanceTimersByTime(1000);
     key('keyup');
     expect(s.on).toBe(true);
     expect(clicks).toEqual([]);
+    vi.advanceTimersByTime(700);
     key('keydown');
-    vi.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1500);
     key('keyup');
-    expect(s.on).toBe(false);
+    expect(s.on).toBe(true);
+    s.stop();
+    expect(document.querySelector('.scan')).toBeNull();
+    s.dispose();
+  });
+
+  it('keeps the highlight on the same element when targets change, and ignores a select right after', () => {
+    const { s, key, clicks } = setup();
+    s.start();
+    vi.advanceTimersByTime(1000); // on D
+    vi.advanceTimersByTime(700);
+    const a = document.getElementById('a') as HTMLButtonElement;
+    a.disabled = true; // the list shrinks: D must stay highlighted
+    key('keydown');
+    key('keyup');
+    expect(clicks).toEqual([]); // ignored: the targets just changed
+    expect(document.querySelector('.scan')?.id).toBe('d');
+    vi.advanceTimersByTime(600);
+    key('keydown');
+    key('keyup');
+    expect(clicks).toEqual(['d']);
+    s.dispose();
+  });
+
+  it('pauses while a dialog is open', () => {
+    const { s, key, clicks } = setup();
+    s.start();
+    vi.advanceTimersByTime(700);
+    const d = document.createElement('dialog');
+    d.setAttribute('open', '');
+    document.body.append(d);
+    vi.advanceTimersByTime(3000);
+    key('keydown');
+    key('keyup');
+    expect(clicks).toEqual([]);
     expect(document.querySelector('.scan')).toBeNull();
     s.dispose();
   });

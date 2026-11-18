@@ -21,6 +21,8 @@ export type SessionDeps = {
     repeat(prompt: string, signal: AbortSignal): Promise<string>;
   };
   phrases: string[];
+  /** False when this browser has no model and Cloud live mode is off: phrases and typing only. */
+  suggestions: boolean;
   onEnd(): void;
   openReceipt(): void;
 };
@@ -68,6 +70,7 @@ export function renderSession(deps: SessionDeps): SessionView {
     const text = partnerInput.value.trim();
     if (!text) return;
     partnerInput.value = '';
+    partnerInput.blur(); // the next key press belongs to the Sotto user (1, 2, 3, H)
     live.partner(text, 'typed');
   });
   partnerInput.addEventListener('keydown', (e) => {
@@ -199,13 +202,16 @@ export function renderSession(deps: SessionDeps): SessionView {
     }
     paintOptions(texts, kinds, final);
   }
-  function paintOptions(texts: string[], kinds: (SayOption['kind'] | '')[], final: boolean) {
+  let fillers: boolean[] = [];
+  function paintOptions(texts: string[], kinds: (SayOption['kind'] | '')[], final: boolean, keepRest = false) {
+    if (final || !keepRest) optionsEl.classList.remove('stale');
     optionBtns.forEach((b, i) => {
+      if (keepRest && !texts[i]) return; // streaming: later slots keep the previous turn's option until replaced
       const t = texts[i] ?? '';
       const textEl = b.querySelector('.text')!;
       const changed = textEl.textContent !== t;
       setText(textEl, t);
-      setText(b.querySelector('.kind'), t ? KIND_LABEL[(kinds[i] || (['answer', 'alternative', 'question'] as const)[i]) as SayOption['kind']] : '');
+      setText(b.querySelector('.kind'), t ? (final && fillers[i] ? 'Quick reply' : KIND_LABEL[(kinds[i] || (['answer', 'alternative', 'question'] as const)[i]) as SayOption['kind']]) : '');
       b.classList.toggle('skeleton', !t);
       b.classList.remove('said');
       b.disabled = !t || !final; // a streamed option is visible at once, tappable once checked
@@ -220,12 +226,13 @@ export function renderSession(deps: SessionDeps): SessionView {
     });
     if (final) announce('Three things to say are ready.');
   }
+  /** A new line is being answered: the old options stay, dimmed and still usable, until new ones arrive. */
   function skeleton() {
-    if (holdsFocus() && optionBtns.some((b) => !b.classList.contains('skeleton'))) return; // keep what is under the finger
-    paintOptions([], [], false);
+    if (optionBtns.some((b) => !b.classList.contains('skeleton'))) optionsEl.classList.add('stale');
+    else paintOptions([], [], false);
   }
 
-  const steerInput = h('input', { class: 'text-input', id: 'steer', placeholder: 'One word to steer', maxlength: 60, autocomplete: 'off', 'aria-label': 'One or two words to steer the suggestions' });
+  const steerInput = h('input', { class: 'text-input', id: 'steer', placeholder: 'One word to steer, or a sentence to speak', maxlength: 200, autocomplete: 'off', 'aria-label': 'One or two words to steer the suggestions, or a sentence to speak' });
   const steerGo = h('button', { class: 'btn small', id: 'steer-go' }, 'Steer');
   const sendTyped = h('button', { class: 'btn small', id: 'say-typed', title: 'Say exactly what I typed' }, 'Speak');
   const completions = h('div', { class: 'row completions', id: 'completions', role: 'group', 'aria-label': 'Ways to finish what you typed' });
@@ -242,7 +249,9 @@ export function renderSession(deps: SessionDeps): SessionView {
   steerInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      doSteer();
+      // One or two words steer the suggestions; a longer line is what I want to say.
+      if (steerInput.value.trim().split(/\s+/).length <= 2) doSteer();
+      else sendTyped.click();
     }
   });
   function doSteer() {
@@ -280,7 +289,17 @@ export function renderSession(deps: SessionDeps): SessionView {
   const thumbbar = h('footer', { class: 'thumbbar' }, quick, holdBtn);
 
   const errorLine = h('p', { class: 'note-line', id: 'live-note', role: 'status' });
-  const emptySay = h('p', { class: 'empty-say', id: 'empty-say' }, state.speech === 'available' ? 'When they speak, three things to say appear here. They can also type on their side.' : 'When they type on their side, three things to say appear here.', h('br', {}), h('span', { class: 'muted' }, 'Hold on and the quick phrases are always at the bottom.'));
+  const emptySay = h(
+    'p',
+    { class: 'empty-say', id: 'empty-say' },
+    !deps.suggestions
+      ? 'This browser cannot make suggestions. Type below and press Speak, or use Hold on and the quick phrases at the bottom.'
+      : state.speech === 'available'
+        ? 'When they speak, three things to say appear here. They can also type on their side.'
+        : 'When they type on their side, three things to say appear here.',
+    deps.suggestions ? h('br', {}) : null,
+    deps.suggestions ? h('span', { class: 'muted' }, 'Hold on and the quick phrases are always at the bottom.') : null,
+  );
   const sayPanel = h('section', { id: 'say-panel', 'aria-label': 'Say' }, emptySay, optionsEl, steer);
 
   // ---------- Ask ----------
@@ -344,6 +363,7 @@ export function renderSession(deps: SessionDeps): SessionView {
     askBtn.setAttribute('aria-pressed', String(m === 'ask'));
     sayPanel.hidden = m !== 'say';
     prevLine.hidden = lastLine.hidden = m === 'ask'; // Ask shows the line itself, larger
+    strip.classList.toggle('compact', m === 'ask');
     askPanel.hidden = m !== 'ask';
     if (lastPartner(live.turns)) live.refresh();
   }
@@ -425,9 +445,10 @@ export function renderSession(deps: SessionDeps): SessionView {
         else showAsk({}, false);
         break;
       case 'say-partial':
-        showOptions(e.texts, [], false);
+        if (!holdsFocus()) paintOptions(e.texts, [], false, true);
         break;
       case 'say':
+        fillers = e.options.map((o) => !!o.filler);
         showOptions(
           e.options.map((o) => o.text),
           e.options.map((o) => o.kind),
@@ -441,6 +462,7 @@ export function renderSession(deps: SessionDeps): SessionView {
         showAsk(e.result, true);
         break;
       case 'error':
+        if (!deps.suggestions) break; // expected: no model here; the empty state already says so
         setText(errorLine, `No suggestions for that line (${e.message.slice(0, 80)}). The quick phrases still work.`);
         if (e.mode === 'say') paintOptions([], [], false);
         break;
@@ -458,7 +480,7 @@ export function renderSession(deps: SessionDeps): SessionView {
     const t = e.target as HTMLElement;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
     if (document.querySelector('dialog[open]')) return;
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.ctrlKey || e.metaKey || e.altKey || !state.settings.shortcuts) return;
     if (state.mode === 'say' && ['1', '2', '3'].includes(e.key)) {
       const b = optionBtns[Number(e.key) - 1];
       if (!b.disabled) {
@@ -478,8 +500,8 @@ export function renderSession(deps: SessionDeps): SessionView {
   const scanner = createScanner({
     rateMs: state.settings.scanRateMs,
     items: () => [
-      ...(state.mode === 'say' ? optionBtns : [sayQuestion, repeatBtn]),
       holdBtn,
+      ...(state.mode === 'say' ? optionBtns : [sayQuestion, repeatBtn]),
       ...Array.from(quick.querySelectorAll<HTMLElement>('button')).filter((b) => b !== holdBtn),
       flipBtn,
       endBtn,

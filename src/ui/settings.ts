@@ -97,6 +97,7 @@ export async function openSettings(onClose: () => void): Promise<void> {
       toggle('scan', 'Scan when a conversation starts', 'Space selects. Hold Space for one second to turn scanning on or off. Enter moves on, for two switches.'),
       h('label', { class: 'field-label', for: 'set-scan-rate' }, 'Time on each item'),
       h('div', { class: 'row' }, scanRate, scanOut),
+      toggle('shortcuts', 'Single-key shortcuts', '1, 2 and 3 say a suggestion, H holds the floor, / jumps to typing. Switch off if keys get pressed by accident.'),
       h('h3', {}, 'Quick phrases'),
       h('p', { class: 'muted' }, 'One per line. They are always at the bottom of the screen and speak at once.'),
       phrases,

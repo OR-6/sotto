@@ -30,29 +30,50 @@ export function createScanner(o: ScanOptions): Scanner {
   let spaceDownAt = 0;
   let longPressTimer = 0;
   let longPressed = false;
+  /** The highlighted element itself, so the highlight stays on it when the list changes. */
+  let anchor: HTMLElement | null = null;
+  let changedAt = 0;
+  let lastKey = '';
+  /** A selection right after the targets changed is ignored: the user aimed at the old one. */
+  const SETTLE_MS = 600;
+  const dialogOpen = () => !!doc.querySelector('dialog[open]');
 
   const current = () => o.items().filter((el) => el.isConnected && !(el as HTMLButtonElement).disabled && !el.closest('[hidden]'));
   const paint = () => {
     const items = current();
     doc.querySelectorAll('.scan').forEach((el) => el.classList.remove('scan'));
-    if (!on || !items.length) return;
+    if (!on || !items.length || dialogOpen()) return;
+    const key = items.map((el) => el.id || el.textContent).join('|') + items.map((el) => el.textContent).join('|');
+    if (key !== lastKey) {
+      lastKey = key;
+      changedAt = performance.now();
+      // Re-anchor on the element that was highlighted, wherever it is now.
+      const at = anchor ? items.indexOf(anchor) : -1;
+      if (at >= 0) index = at;
+    }
     index = ((index % items.length) + items.length) % items.length;
     const el = items[index];
+    anchor = el;
     el.classList.add('scan');
     el.scrollIntoView?.({ block: 'nearest' });
     o.announce?.(el.getAttribute('aria-label') || el.textContent || '');
   };
   const step = () => {
+    if (dialogOpen()) return paint(); // paused while a dialog is open
     index++;
     paint();
   };
   const select = () => {
+    if (dialogOpen()) return;
+    paint(); // refresh: the targets may have changed since the last step
+    if (performance.now() - changedAt < SETTLE_MS) return;
     const items = current();
     const el = items[index];
     if (!el) return;
     if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') (el as HTMLInputElement).focus();
     else el.click();
-    index = 0; // restart from the top after a choice: the next answer is usually option 1
+    index = 0; // restart from the top after a choice
+    anchor = null;
     restart();
   };
   const restart = () => {
@@ -71,10 +92,13 @@ export function createScanner(o: ScanOptions): Scanner {
       if (e.repeat) return;
       spaceDownAt = performance.now();
       longPressed = false;
-      longPressTimer = window.setTimeout(() => {
-        longPressed = true;
-        api.toggle();
-      }, 1000);
+      // Holding the switch only turns scanning ON. A slow release while scanning must never turn it
+      // off, so turning it off is done with the Scan button (or Settings).
+      if (!on)
+        longPressTimer = window.setTimeout(() => {
+          longPressed = true;
+          api.start();
+        }, 1000);
     } else if (on && e.key === 'Enter' && !typing) {
       e.preventDefault();
       step(); // second switch: advance
