@@ -19,6 +19,10 @@ import { renderStart } from './start';
 import { renderPrepare } from './prepare';
 import { renderSummary } from './summary';
 import { loadVoice, renderVoice } from './voice';
+import { renderSafety } from './safety';
+import { composeAsk } from '../core/compose';
+import { filterAsk } from '../core/filter';
+import type { RedCase } from '../core/redteam';
 import { composeSay } from '../core/compose';
 import { parseJson, filterSay } from '../core/filter';
 import { voiceDigest } from '../core/prompts/voice';
@@ -94,6 +98,7 @@ function go(screen: Screen) {
   else if (screen === 'prepare') (void ensureConfig(), renderPrepare(root, nav, aiPair));
   else if (screen === 'session') startSession();
   else if (screen === 'replay') renderReplayList(root, nav, replays);
+  else if (screen === 'safety') renderSafety(root, nav, { live: hasDevice() ? runRedLive : undefined });
   else if (screen === 'voice') (void ensureConfig(), renderVoice(root, nav, { cloud: () => getCloud().ai, compare: hasDevice() ? compareVoice : undefined }));
   else if (screen === 'summary') (void ensureConfig(), renderSummary(root, aiPair, { turns: live?.turns ?? [], flags: state.flags }, () => (resetSession(), go('choose'))));
   const main = root.querySelector('main');
@@ -176,6 +181,44 @@ async function compareVoice(voice: string) {
   return { line, before, after };
 }
 
+/** A red-team line through the real on-device model and the same filters. Nothing is sent. */
+async function runRedLive(c: RedCase) {
+  const ctx = { situation: 'a conversation', partner: 'someone', tone: 'neutral' as const, joke: false, brief: '', voice: '', turns: [{ id: 1, who: 'P' as const, text: c.line, at: 0, via: 'typed' as const }], budgetChars: 3000 };
+  const b = getPrivate();
+  const signal = new AbortController().signal;
+  if (c.mode === 'say') {
+    const r = await b.say(composeSay(ctx, ''), () => undefined, signal);
+    state.receipt.recordDevice({ step: `safety ${c.id}`, mode: 'ONLY_ON_DEVICE', ms: r.ms });
+    const f = filterSay(parseJson(r.text), c.line);
+    return { kept: f.options.map((o) => (o.filler ? `${o.text} (quick reply)` : o.text)), dropped: f.dropped.map((d) => `${d.text} (${d.why})`), ms: r.ms };
+  }
+  const r = await b.ask(composeAsk(ctx), () => undefined, signal);
+  state.receipt.recordDevice({ step: `safety ${c.id}`, mode: 'ONLY_ON_DEVICE', ms: r.ms });
+  const f = filterAsk(parseJson(r.text), c.line);
+  const x = f.result;
+  return { kept: x ? [x.means && `Means: ${x.means}`, x.ask && `Ask: ${x.ask}`, x.flag.kind !== 'none' ? `Flag (${x.flag.kind}): ${x.flag.quote}` : ''].filter(Boolean) : [], dropped: f.notes, ms: r.ms };
+}
+
+/** The Settings latency check: three warm Say calls on one line, timed to first option and to all three. */
+async function measureLatency() {
+  const ctx = { situation: 'Café', partner: 'the barista', tone: state.settings.tone, joke: false, brief: '', voice: '', turns: [{ id: 1, who: 'P' as const, text: 'What can I get you?', at: 0, via: 'typed' as const }], budgetChars: 3000 };
+  const b = getPrivate();
+  if (!state.warmMs) state.warmMs = await b.warm();
+  const first: number[] = [];
+  const total: number[] = [];
+  for (let i = 0; i < 3; i++) {
+    const t0 = performance.now();
+    let f = 0;
+    const r = await b.say(composeSay(ctx, ''), (soFar) => {
+      if (!f && /"text"\s*:\s*"[^"]+"/.test(soFar)) f = performance.now() - t0;
+    }, new AbortController().signal);
+    state.receipt.recordDevice({ step: 'latency check', mode: 'ONLY_ON_DEVICE', ms: r.ms });
+    first.push(f || r.ms);
+    total.push(performance.now() - t0);
+  }
+  return { first, total };
+}
+
 /** Ends a conversation: what was said is dropped from memory. */
 function resetSession() {
   live?.clear();
@@ -194,6 +237,7 @@ export async function boot(container: HTMLElement): Promise<void> {
   // A LanguageModel defined by a page script or extension would receive every live prompt: refuse it.
   state.device = device !== 'missing' && !deviceRuntimeNative() ? 'unavailable' : device;
   state.speech = speech;
+  if (state.device === 'available') state.measure = measureLatency;
   state.voices = offlineVoices(voices).length;
   replays = await loadReplays();
   state.replays = replays.length;

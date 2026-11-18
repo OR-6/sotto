@@ -62,6 +62,23 @@ export async function openSettings(onClose: () => void): Promise<void> {
     cleared.textContent = 'Cleared: settings, phrases, briefs, saved numbers, and the Firebase identifiers and tokens a cloud step stored.';
   });
 
+  const latencyOut = h('p', { class: 'tabular', id: 'latency-out', role: 'status' });
+  const latencyBtn = h('button', { class: 'btn small', id: 'latency-run', disabled: !state.measure }, state.measure ? 'Measure now' : 'Needs the on-device model');
+  latencyBtn.addEventListener('click', async () => {
+    if (!state.measure) return;
+    latencyBtn.disabled = true;
+    latencyOut.textContent = 'Measuring…';
+    try {
+      const r = await state.measure();
+      const med = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor((xs.length - 1) / 2)];
+      latencyOut.textContent = `First suggestion: ${(med(r.first) / 1000).toFixed(2)} s. All three: ${(med(r.total) / 1000).toFixed(2)} s. Median of ${r.total.length}, on this device.`;
+    } catch (e) {
+      latencyOut.textContent = `Could not measure: ${(e as Error).message}`;
+    } finally {
+      latencyBtn.disabled = false;
+    }
+  });
+  const latencyRow = h('div', { class: 'row' }, latencyBtn, latencyOut);
   const close = h('button', { class: 'btn small', 'data-close': '' }, 'Done');
   const d = h(
     'dialog',
@@ -102,6 +119,9 @@ export async function openSettings(onClose: () => void): Promise<void> {
       h('p', { class: 'muted' }, 'One per line. They are always at the bottom of the screen and speak at once.'),
       phrases,
       h('div', { class: 'row', style: 'margin-top:8px' }, resetPhrases),
+      h('h3', {}, 'Latency check'),
+      h('p', { class: 'muted' }, 'Three Say suggestions for the same line, on this device. Nothing is sent.'),
+      latencyRow,
       h('h3', {}, 'On this device'),
       h('p', { class: 'muted' }, 'Sotto keeps only what you save: settings, phrases, briefs you keep and session numbers. Never what was said, never the receipt.'),
       h('div', { class: 'row' }, clearBtn, cleared),

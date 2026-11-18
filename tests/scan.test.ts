@@ -104,3 +104,28 @@ describe('switch scanning', () => {
     s.dispose();
   });
 });
+
+describe('group scanning', () => {
+  it('steps through groups, enters one on select, picks inside it, and returns after two idle passes', () => {
+    document.body.innerHTML = '<button id="h">Hold</button><button id="o1">O1</button><button id="o2">O2</button><button id="q1">Q1</button>';
+    const clicks: string[] = [];
+    document.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => clicks.push(b.id)));
+    const $ = (id: string) => document.getElementById(id) as HTMLElement;
+    const s = createScanner({ items: () => [], groups: () => [[$('h')], [$('o1'), $('o2')], [$('q1')]], rateMs: 1000 });
+    const key = (type: 'keydown' | 'keyup') => document.body.dispatchEvent(new KeyboardEvent(type, { code: 'Space', key: ' ', bubbles: true }));
+    s.start();
+    expect([...document.querySelectorAll('.scan')].map((e) => e.id)).toEqual(['h']);
+    vi.advanceTimersByTime(1000);
+    expect([...document.querySelectorAll('.scan')].map((e) => e.id)).toEqual(['o1', 'o2']);
+    key('keydown');
+    key('keyup'); // enter the options group
+    vi.advanceTimersByTime(700);
+    expect([...document.querySelectorAll('.scan')].map((e) => e.id)).toEqual(['o1']);
+    vi.advanceTimersByTime(1000);
+    key('keydown');
+    key('keyup');
+    expect(clicks).toEqual(['o2']);
+    expect([...document.querySelectorAll('.scan')].map((e) => e.id)).toEqual(['h']); // back to the top
+    s.dispose();
+  });
+});

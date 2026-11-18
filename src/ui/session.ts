@@ -36,6 +36,8 @@ export function renderSession(deps: SessionDeps): SessionView {
   const { live } = deps;
   live.mode = state.mode;
   let listener: Listener | null = null;
+  /** Set from the recogniser's own state callback (it fires before listen() returns). */
+  let listeningNow = false;
   let wantListening = state.speech === 'available';
   let askedAt = 0;
   let disposed = false;
@@ -45,6 +47,7 @@ export function renderSession(deps: SessionDeps): SessionView {
   const partnerSaid = h('p', { class: 'partner-said empty', id: 'partner-said', 'aria-live': 'off' }, 'Sotto will show what I say here.');
   const partnerTyping = h('p', { class: 'partner-typing', id: 'partner-typing' });
   let lastSpoken = '';
+  const history = h('ol', { class: 'partner-history', id: 'partner-history', 'aria-label': 'What I said before' });
   const againBtn = h('button', { class: 'btn small', id: 'say-again', disabled: true }, 'Say again');
   const stopBtn = h('button', { class: 'btn small', id: 'stop-speaking', disabled: true }, 'Stop');
   againBtn.addEventListener('click', () => lastSpoken && speakOut(lastSpoken));
@@ -60,6 +63,7 @@ export function renderSession(deps: SessionDeps): SessionView {
     partnerSaid,
     h('div', { class: 'row' }, againBtn, stopBtn),
     partnerTyping,
+    history,
     h('form', { class: 'partner-form', id: 'partner-form' }, partnerInput, partnerSend),
   );
   const setNotice = () =>
@@ -67,7 +71,7 @@ export function renderSession(deps: SessionDeps): SessionView {
       partnerNotice,
       state.cloudLive
         ? 'Cloud live mode is on. What is said here is sent to Google\'s Gemini.'
-        : listener?.listening
+        : listeningNow
           ? 'Sotto is listening on this device only. You can also type here.'
           : 'Sotto is not listening right now. You can type here.',
     );
@@ -107,7 +111,9 @@ export function renderSession(deps: SessionDeps): SessionView {
   const askBtn = modeBtn('ask', 'Ask');
   const pulse = h('span', { class: 'pulse', 'aria-hidden': 'true' });
   const listenLabel = h('span', {}, 'Not listening');
-  const listenBtn = h('button', { class: 'btn small', id: 'listen' }, 'Listen');
+  const listenBtn = h('button', { class: 'btn small desktop-only', id: 'listen' }, 'Listen');
+  const listenMenuBtn = h('button', { class: 'btn small phone-only', id: 'listen-menu' }, 'Listen');
+  listenMenuBtn.addEventListener('click', () => listenBtn.click());
   const receiptBtn = h('button', { class: 'btn small', id: 'open-receipt' }, 'Receipt');
   const scanBtn = h('button', { class: 'btn small', id: 'scan-toggle', 'aria-pressed': 'false', title: 'Switch scanning: or hold Space for one second' }, 'Scan');
   const endBtn = h('button', { class: 'btn small desktop-only', id: 'end' }, 'End');
@@ -131,6 +137,7 @@ export function renderSession(deps: SessionDeps): SessionView {
       'div',
       { class: 'more-menu' },
       h('p', { class: 'muted' }, `${situation} · with ${live.chips.partner || 'someone'}${state.useBrief && state.brief ? ' · brief on' : ''}`),
+      state.speech === 'available' ? listenMenuBtn : null,
       scanBtn,
       settingsBtn,
       endMenuBtn,
@@ -155,7 +162,7 @@ export function renderSession(deps: SessionDeps): SessionView {
     stopSpeaking();
     deps.onEnd();
   });
-  listenBtn.addEventListener('click', () => (listener?.listening ? (wantListening = false, stopListening()) : ((wantListening = true), startListening())));
+  listenBtn.addEventListener('click', () => (listeningNow ? (wantListening = false, stopListening()) : ((wantListening = true), startListening())));
 
   // ---------- transcript strip ----------
   const prevLine = h('p', { class: 'prev', id: 'prev-line' });
@@ -385,6 +392,10 @@ export function renderSession(deps: SessionDeps): SessionView {
   function say(text: string, via: 'option' | 'quick' | 'typed') {
     live.user(text, 'tap');
     state.answers.push({ askedAt: askedAt || Date.now(), answeredAt: Date.now(), text, via });
+    if (!partnerSaid.classList.contains('empty') && partnerSaid.textContent && partnerSaid.textContent !== HOLD_LINE) {
+      history.prepend(h('li', {}, partnerSaid.textContent));
+      while (history.children.length > 3) history.lastElementChild!.remove();
+    }
     partnerSaid.classList.remove('empty');
     setText(partnerSaid, text);
     setText(partnerTyping, '');
@@ -404,14 +415,14 @@ export function renderSession(deps: SessionDeps): SessionView {
   function speakOut(text: string) {
     lastSpoken = text;
     againBtn.disabled = stopBtn.disabled = false;
-    const resume = listener?.listening;
+    const resume = listeningNow;
     if (resume) stopListening();
     const ok = speak(text, { voiceName: state.settings.voiceName, rate: state.settings.rate, onEnd: () => resume && wantListening && !disposed && startListening() });
     if (!ok && resume) startListening();
   }
 
   function startListening() {
-    if (state.speech !== 'available' || listener?.listening) return;
+    if (state.speech !== 'available' || listeningNow) return;
     try {
       const pack = state.pack;
       listener = listen(
@@ -423,7 +434,9 @@ export function renderSession(deps: SessionDeps): SessionView {
           },
           onError: (code) => setText(errorLine, code === 'not-allowed' ? 'The microphone is blocked for this page. The other person can type instead.' : `Listening stopped (${code}). Press Listen to try again.`),
           onState: (on) => {
+            listeningNow = on;
             pulse.classList.toggle('on', on);
+            setText(listenMenuBtn, on ? 'Stop listening' : 'Listen');
             setText(listenLabel, on ? 'Listening on this device' : 'Not listening');
             setText(listenBtn, on ? 'Stop listening' : 'Listen');
             setNotice();
@@ -438,7 +451,9 @@ export function renderSession(deps: SessionDeps): SessionView {
   function stopListening() {
     listener?.stop();
     listener = null;
+    listeningNow = false;
     pulse.classList.remove('on');
+    setText(listenMenuBtn, 'Listen');
     setText(listenLabel, 'Not listening');
     setText(listenBtn, 'Listen');
     setNotice();
@@ -535,11 +550,14 @@ export function renderSession(deps: SessionDeps): SessionView {
 
   const scanner = createScanner({
     rateMs: state.settings.scanRateMs,
-    items: () => [
-      holdBtn,
-      ...(state.mode === 'say' ? optionBtns : [sayQuestion, repeatBtn]),
-      ...Array.from(quick.querySelectorAll<HTMLElement>('button')).filter((b) => b !== holdBtn),
-      flipBtn,
+    items: () => [],
+    // Group scanning: Hold on is one step away; any option is at most four; any phrase about ten.
+    groups: () => [
+      [holdBtn],
+      state.mode === 'say' ? optionBtns : [sayQuestion, repeatBtn],
+      Array.from(quick.querySelectorAll<HTMLElement>('button')).slice(0, 7),
+      Array.from(quick.querySelectorAll<HTMLElement>('button')).slice(7),
+      [againBtn, flipBtn, steerInput],
     ],
     announce: (label) => announce(label),
     onChange: (on) => {

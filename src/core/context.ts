@@ -24,19 +24,26 @@ export function capWords(s: string, max: number): string {
   return words.length <= max ? words.join(' ') : words.slice(0, max).join(' ') + ' …';
 }
 
-/** Header lines in a fixed order; digests are capped by words so the turns keep their room. */
+/**
+ * Header lines in a fixed order, then the turns. Over budget, the brief and voice digests shrink
+ * first (120, 60, 30 words, then none); the header is never cut, and the last partner turn is kept.
+ */
 export function buildContext(c: ContextInput): string {
-  const header = [
-    `Situation: ${c.situation || 'a conversation'}`,
-    `Talking to: ${c.partner || 'someone'}`,
-    `Tone: ${c.tone}${c.joke ? ', add a light joke where it fits' : ''}`,
-    `Brief: ${c.brief ? capWords(c.brief, DIGEST_MAX_WORDS) : 'none'}`,
-    `Voice: ${c.voice ? capWords(c.voice, DIGEST_MAX_WORDS) : 'none'}`,
-    'Conversation (oldest first):',
-  ].join('\n');
-  const room = Math.max(200, c.budgetChars - header.length - 1);
-  const turns = trimTurns(c.turns, room);
-  const body = turns.length ? turns.map((t) => `${t.who}: ${t.text}`).join('\n') : '(nothing said yet)';
-  const out = `${header}\n${body}`;
-  return out.length <= c.budgetChars ? out : out.slice(out.length - c.budgetChars);
+  for (const words of [DIGEST_MAX_WORDS, 60, 30, 0]) {
+    const header = [
+      `Situation: ${c.situation || 'a conversation'}`,
+      `Talking to: ${c.partner || 'someone'}`,
+      `Tone: ${c.tone}${c.joke ? ', add a light joke where it fits' : ''}`,
+      `Brief: ${c.brief && words ? capWords(c.brief, words) : 'none'}`,
+      `Voice: ${c.voice && words ? capWords(c.voice, words) : 'none'}`,
+      'Conversation (oldest first):',
+    ].join('\n');
+    const room = c.budgetChars - header.length - 1;
+    if (room < 200 && words) continue; // give the turns room: shrink the digests
+    const turns = trimTurns(c.turns, Math.max(40, room));
+    const body = turns.length ? turns.map((t) => `${t.who}: ${t.text}`).join('\n') : '(nothing said yet)';
+    const out = `${header}\n${body}`;
+    if (out.length <= c.budgetChars || !words) return out.length <= c.budgetChars ? out : out.slice(0, c.budgetChars);
+  }
+  return '';
 }

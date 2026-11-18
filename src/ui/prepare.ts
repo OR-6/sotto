@@ -97,6 +97,7 @@ export function renderPrepare(root: HTMLElement, nav: Nav, ai: { device: Paramet
       h('p', { class: 'lede' }, 'Before a conversation you are nervous about. Type one line about it. The cloud writes a brief: what will happen, the words you will hear, the questions people wish they had asked.'),
       h('label', { class: 'field-label', for: 'prepare-text' }, 'What are you walking into?'),
       input,
+      h('p', { class: 'muted', style: 'margin:6px 0 0' }, 'Describe the situation, not the person: no names, dates of birth or numbers needed.'),
       h(
         'div',
         { class: 'outgoing-pane', 'aria-live': 'polite' },

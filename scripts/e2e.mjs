@@ -50,6 +50,31 @@ const FAKE = `(() => {
   });
 })();`;
 
+// A scripted local recogniser (test-only): window.__hear(text) plays interim words, then a final.
+const FAKE_SPEECH = `(() => {
+  const live = [];
+  class Rec {
+    constructor() { this.lang = ''; this.continuous = false; this.interimResults = false; this.onresult = null; this.onerror = null; this.onend = null; live.push(this); }
+    start() {}
+    stop() { const i = live.indexOf(this); if (i >= 0) live.splice(i, 1); this.onend && this.onend(); }
+    abort() { const i = live.indexOf(this); if (i >= 0) live.splice(i, 1); }
+    static async available() { return 'available'; }
+    static async install() { return true; }
+  }
+  Object.defineProperty(Rec.prototype, 'processLocally', { value: false, writable: true });
+  window.SpeechRecognition = Rec;
+  window.webkitSpeechRecognition = Rec;
+  window.__hear = async (text, pauseMs = 120) => {
+    const words = text.split(' ');
+    for (let i = 1; i <= words.length; i++) {
+      const r = live.at(-1); if (!r || !r.onresult) return;
+      const res = { isFinal: i === words.length, length: 1, 0: { transcript: words.slice(0, i).join(' '), confidence: 0.9 } };
+      r.onresult({ resultIndex: 0, results: { length: 1, 0: res } });
+      await new Promise((ok) => setTimeout(ok, pauseMs));
+    }
+  };
+})();`;
+
 async function axe(page, label) {
   await page.addScriptTag({ content: AXE });
   const r = await page.evaluate(async () => {
@@ -64,9 +89,10 @@ async function noHorizontalScroll(page, label) {
   check(over <= 1, `no horizontal scroll: ${label} (${over}px)`);
 }
 
-async function context(browser, { width, height, theme, fake }) {
+async function context(browser, { width, height, theme, fake, speech }) {
   const ctx = await browser.newContext({ viewport: { width, height }, colorScheme: theme, reducedMotion: 'reduce' });
   if (fake) await ctx.addInitScript(FAKE);
+  if (speech) await ctx.addInitScript(FAKE_SPEECH);
   const page = await ctx.newPage();
   const aiRequests = [];
   page.on('request', (r) => AI_HOST.test(new URL(r.url()).host) && aiRequests.push(r.url()));
@@ -115,6 +141,15 @@ async function run() {
           await axe(page, `start (no model) ${tag}`);
         }
         await noHorizontalScroll(page, `start ${tag}`);
+        if (full) {
+          await page.click('#open-safety');
+          await page.waitForSelector('#case-R8');
+          check((await page.textContent('#case-R3')).includes('Removed'), 'the Safety page shows the rules at work in a browser without the model');
+          await shot(page, dir, '11-safety', true);
+          await axe(page, `safety ${tag}`);
+          await page.click('#safety-back');
+          await page.waitForSelector('#start');
+        }
         await page.check('#consent');
         await page.click('#cloud-live');
         await page.waitForSelector('#cloud-confirm');
@@ -141,7 +176,7 @@ async function run() {
 
       // ---- World 2: a stand-in for the on-device model ----
       {
-        const { ctx, page, aiRequests, errors } = await context(browser, { ...size, theme, fake: true });
+        const { ctx, page, aiRequests, errors } = await context(browser, { ...size, theme, fake: true, speech: true });
         await page.goto(BASE + '/', { waitUntil: 'networkidle' });
         await page.waitForSelector('#start');
         await page.check('#consent');
@@ -156,6 +191,17 @@ async function run() {
         await page.click('#begin');
         await page.waitForSelector('#options', { state: 'attached' });
         await shot(page, dir, '05-say-empty');
+        // Listening: the partner speaks; interim words show faintly, the final line becomes a turn.
+        if (await page.isVisible('#listen')) {
+          check((await page.textContent('#partner-notice')).includes('listening on this device only'), `the partner side says Sotto listens on this device only (${tag})`);
+          await page.evaluate(() => window.__hear('Hi there, what can I get you?', 150).then(() => undefined));
+          await page.waitForFunction(() => document.querySelectorAll('.option:not(.skeleton):not(:disabled)').length === 3);
+          await page.evaluate(() => { window.__hear('So are you staying in or taking it with you', 400); });
+          await page.waitForTimeout(900);
+          await shot(page, dir, '05b-listening');
+          if (full) check((await page.textContent('#interim')).length > 0, 'interim words show while they speak');
+          await page.waitForFunction(() => document.querySelector('#last-line')?.textContent?.includes('taking it with you'), null, { timeout: 15000 });
+        }
         await partnerSays(page, 'Hi there, what can I get you?');
         await page.waitForFunction(() => document.querySelectorAll('.option:not(.skeleton):not(:disabled)').length === 3);
         await page.mouse.move(0, 0);
@@ -242,5 +288,6 @@ async function run() {
 
 run().catch((e) => {
   console.error(e);
-  process.exitCode = 1;
+  console.log('\nE2E: aborted by an error');
+  process.exit(1); // do not hang on an open browser
 });

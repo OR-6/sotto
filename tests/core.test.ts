@@ -70,6 +70,13 @@ describe('context', () => {
       }),
     );
   });
+  it('shrinks the digests before cutting anything, and never cuts the header', () => {
+    const c = buildContext({ ...base, brief: 'brief '.repeat(300), voice: 'voice '.repeat(300), turns: [T(1, 'P', 'x'.repeat(500))], budgetChars: 900 });
+    expect(c.startsWith('Situation: Café')).toBe(true);
+    expect(c).toContain('Conversation (oldest first):');
+    expect(c.length).toBeLessThanOrEqual(900);
+  });
+
   it('mentions a joke only when asked', () => {
     expect(buildContext({ ...base, joke: true })).toContain('light joke');
     expect(buildContext(base)).not.toContain('joke');

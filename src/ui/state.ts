@@ -67,6 +67,8 @@ export const state = {
   flags: [] as { kind: string; quote: string }[],
   useBrief: false,
   voicePack: null as VoicePack | null,
+  /** Runs the latency check on this device (set by the app when the model is available). */
+  measure: undefined as undefined | (() => Promise<{ first: number[]; total: number[] }>),
   useVoice: false,
   answers: [] as Answer[],
 };

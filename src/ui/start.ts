@@ -84,6 +84,7 @@ export function renderStart(root: HTMLElement, nav: Nav): void {
         { class: 'footer-line' },
         h('span', {}, 'Sotto restates and asks. It does not advise.'),
         h('button', { class: 'linkish', id: 'open-settings', onclick: () => void openSettings(() => nav.go('start')) }, 'Settings'),
+        h('button', { class: 'linkish', id: 'open-safety', onclick: () => nav.go('safety') }, 'Safety rules'),
         h('button', { class: 'linkish', onclick: () => nav.openReceipt() }, 'Receipt'),
         h('a', { href: 'https://github.com/OR-6/sotto', rel: 'noopener' }, 'How it works'),
       ),
