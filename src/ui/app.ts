@@ -17,6 +17,8 @@ import { renderChoose } from './choose';
 import { renderSession, type SessionView } from './session';
 import { renderStart } from './start';
 import { renderPrepare } from './prepare';
+import { loadReplays, renderReplayList } from './replay';
+import type { Replay } from '../core/replay';
 import { applyTheme, state } from './state';
 
 let root: HTMLElement;
@@ -24,6 +26,7 @@ let banner: HTMLElement;
 let privateBackend: PrivateBackend | null = null;
 let live: Live | null = null;
 let view: SessionView | null = null;
+let replays: Replay[] = [];
 
 function getPrivate(): PrivateBackend {
   privateBackend ??= createPrivateBackend(ai, state.receipt);
@@ -69,6 +72,7 @@ function go(screen: Screen) {
   else if (screen === 'choose') renderChoose(root, nav, begin);
   else if (screen === 'prepare') renderPrepare(root, nav, ai);
   else if (screen === 'session') startSession();
+  else if (screen === 'replay') renderReplayList(root, nav, replays);
   const main = root.querySelector('main');
   if (main) {
     main.setAttribute('tabindex', '-1');
@@ -138,6 +142,8 @@ export async function boot(container: HTMLElement): Promise<void> {
   state.device = device;
   state.speech = speech;
   state.voices = offlineVoices(voices).length;
+  replays = await loadReplays();
+  state.replays = replays.length;
   go('start');
   // Remote Config: the cloud model name and the kill switch. Never blocks the first screen.
   loadConfig(firebaseApp).then((c) => {

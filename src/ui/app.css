@@ -361,3 +361,7 @@ pre.outgoing.small { font-size: 14px; color: var(--muted); margin-top: 8px; }
 .settings input[type='range'] { width: min(360px, 100%); accent-color: var(--amber); min-height: 44px; }
 .settings select.text-input { width: auto; max-width: 100%; }
 textarea.text-input { padding: 12px 16px; min-height: 140px; resize: vertical; }
+
+/* ---------- replay ---------- */
+.replay-label { display: inline-block; border: 2px solid var(--cool); color: var(--cool); border-radius: 999px; padding: 6px 14px; font-weight: 700; font-size: 15px; margin-bottom: 16px; }
+.replay .option { cursor: default; }

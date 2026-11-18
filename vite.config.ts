@@ -18,8 +18,11 @@ function labSave(): Plugin {
           try {
             const { name, data } = JSON.parse(body) as { name: string; data: unknown };
             if (!/^[a-z0-9-]{1,40}$/.test(name)) throw new Error('bad name');
-            mkdirSync(resolve(root, 'replays'), { recursive: true });
-            writeFileSync(resolve(root, 'replays', `step0-${name}.json`), JSON.stringify(data, null, 2) + '\n');
+            // Replays are served to the app (public/replays); measurements stay in replays/.
+            const replay = name.startsWith('replay-');
+            const dir = replay ? resolve(root, 'public', 'replays') : resolve(root, 'replays');
+            mkdirSync(dir, { recursive: true });
+            writeFileSync(resolve(dir, replay ? `${name.slice(7)}.json` : `step0-${name}.json`), JSON.stringify(data, null, 2) + '\n');
             res.statusCode = 204;
           } catch {
             res.statusCode = 400;

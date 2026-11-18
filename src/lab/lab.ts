@@ -18,6 +18,9 @@ import type { Turn } from '../core/turns';
 import { installSpeech, listen, readSpeechState, type Listener } from '../speech/recognise';
 import { loadVoices, offlineVoices } from '../speech/speak';
 import { ASK_BENCH, SAY_BENCH, type BenchItem } from './bench-lines';
+import { createLive, type LiveEvent } from '../ai/live';
+import { createPrivateBackend } from '../ai/private-backend';
+import { REPLAY_SCRIPTS, type Replay, type ReplayStep } from '../core/replay';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const logEl = $('log');
@@ -363,3 +366,65 @@ $('download').onclick = () => {
 };
 
 void showCapability();
+
+// ---------- Record the three replays (real on-device outputs and timings) ----------
+async function recordReplay(script: (typeof REPLAY_SCRIPTS)[number]): Promise<Replay> {
+  const rec = createReceipt();
+  const backend = createPrivateBackend(ai, rec);
+  await backend.warm();
+  const live = createLive({ backend, receipt: rec, budgetChars: CONFIG_DEFAULTS.max_context_tokens_web * 3 });
+  const pack = packById(script.pack);
+  live.mode = script.mode;
+  live.chips = { situation: pack?.label ?? script.title, partner: script.partner, tone: 'neutral', joke: false, brief: pack?.digest ?? '', voice: '' };
+  const t0 = performance.now();
+  const steps: ReplayStep[] = [];
+  const next = (want: 'say' | 'ask') =>
+    new Promise<{ e: LiveEvent; firstMs: number; totalMs: number }>((resolve, reject) => {
+      const start = performance.now();
+      let first = 0;
+      const off = live.on((e) => {
+        if (!first && (e.type === 'say-partial' || e.type === 'ask-partial')) first = performance.now() - start;
+        if (e.type === want) (off(), resolve({ e, firstMs: first || performance.now() - start, totalMs: performance.now() - start }));
+        if (e.type === 'error') (off(), reject(new Error(e.message)));
+      });
+    });
+  for (const line of script.lines) {
+    const at = Math.round(performance.now() - t0);
+    const wait = next(script.mode);
+    live.partner(line.partner, 'typed');
+    let r = await wait;
+    if (line.steer) {
+      const w2 = next('say');
+      live.steer(line.steer);
+      r = await w2;
+    }
+    const step: ReplayStep = { at, partner: line.partner, firstMs: Math.round(r.firstMs), totalMs: Math.round(r.totalMs) };
+    if (line.steer) step.steer = line.steer;
+    if (r.e.type === 'say') {
+      step.options = r.e.options;
+      if (line.chose !== undefined) {
+        step.chose = line.chose;
+        live.user(r.e.options[line.chose].text, 'tap');
+      }
+    }
+    if (r.e.type === 'ask') step.ask = r.e.result;
+    steps.push(step);
+    log(`${script.id}: ${line.partner.slice(0, 40)}… first ${step.firstMs} ms, all ${step.totalMs} ms`);
+  }
+  const info = browserInfo();
+  return { kind: 'sotto-replay', version: 1, id: script.id, title: script.title, mode: script.mode, pack: script.pack, partner: script.partner, recordedAt: info.date, browser: `Chrome ${info.chromeMajor}`, machine: 'FILL: machine', steps, bytesOut: rec.bytesOut };
+}
+
+$('record-replays').onclick = async () => {
+  const status = $('replay-status');
+  for (const s of REPLAY_SCRIPTS) {
+    status.textContent = ` recording ${s.title}…`;
+    try {
+      const r = await recordReplay(s);
+      await save(`replay-${s.id}`, r);
+    } catch (e) {
+      log(`replay ${s.id} failed: ${(e as Error).message}`);
+    }
+  }
+  status.textContent = ' done';
+};
