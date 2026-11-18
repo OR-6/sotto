@@ -1,0 +1,38 @@
+{
+  "name": "sotto",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "The quiet voice beside you: live help in any conversation, on your device.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build && node scripts/check-dist.mjs",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "node scripts/check-ai.mjs && node scripts/check-storage.mjs && node scripts/check-secrets.mjs && node scripts/check-copy.mjs && node scripts/check-attribution.mjs",
+    "check:ai": "node scripts/check-ai.mjs",
+    "check:storage": "node scripts/check-storage.mjs",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "check:copy": "node scripts/check-copy.mjs",
+    "check:attribution": "node scripts/check-attribution.mjs",
+    "docs:ai": "node scripts/where-ai-logic.mjs",
+    "score": "node scripts/score-bench.mjs",
+    "capture": "node scripts/capture.mjs",
+    "e2e": "node scripts/e2e.mjs"
+  },
+  "dependencies": {
+    "firebase": "13.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "axe-core": "4.14.1",
+    "fast-check": "4.10.3",
+    "jsdom": "31.0.1",
+    "playwright": "1.65.1",
+    "typescript": "7.0.2",
+    "vite": "8.3.8",
+    "vitest": "5.1.1"
+  }
+}

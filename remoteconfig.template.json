@@ -1,0 +1,10 @@
+{
+  "parameters": {
+    "cloud_model": { "defaultValue": { "value": "gemini-3.5-flash-lite" }, "valueType": "STRING", "description": "Cloud model for Prepare, the voice pack, the summary and Cloud live mode. Change without a release." },
+    "cloud_enabled": { "defaultValue": { "value": "true" }, "valueType": "BOOLEAN", "description": "Kill switch. false = every cloud step is off for everyone; live help stays on device." },
+    "packs_version": { "defaultValue": { "value": "1" }, "valueType": "NUMBER", "description": "Situation packs version." },
+    "max_context_tokens_web": { "defaultValue": { "value": "3000" }, "valueType": "NUMBER", "description": "Context budget for one live prompt on Web." },
+    "max_context_tokens_android": { "defaultValue": { "value": "1500" }, "valueType": "NUMBER", "description": "Context budget for one live prompt on Android." },
+    "latency_target_ms": { "defaultValue": { "value": "1500" }, "valueType": "NUMBER", "description": "Latency target shown in the latency check." }
+  }
+}
