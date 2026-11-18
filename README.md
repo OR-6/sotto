@@ -22,7 +22,7 @@ A live conversation copilot runs a model on every sentence said to you, hundreds
 
 Every call site is listed in [docs/WHERE-AI-LOGIC-IS-USED.md](docs/WHERE-AI-LOGIC-IS-USED.md), generated from the source and checked in CI.
 
-## How Private mode is enforced, not promised
+## How Private mode is enforced, and where it stops
 
 - **A finding about the SDK.** In firebase 13.4.0 (`@firebase/ai` 3.1.0), a model created with `InferenceMode.ONLY_ON_DEVICE` in a browser with no `LanguageModel` global sends the request to the cloud and reports `inferenceSource: in_cloud`. [tests/sdk-fail-open.canary.test.ts](tests/sdk-fail-open.canary.test.ts) shows it against the SDK's browser bundle and will fail when the SDK changes.
 - **Three guards against it** ([src/ai/models.ts](src/ai/models.ts), [src/ai/egress-guard.ts](src/ai/egress-guard.ts)): a pre-check that the on-device runtime exists before a model is built and before every call; a post-check of `inferenceSource` on every result and every streamed chunk before any text is used; and a network guard that rejects any request to a model host unless a one-shot permit for its exact text is armed. Only [src/ai/cloud.ts](src/ai/cloud.ts) arms permits, and only after you approved the exact text (`check:ai` enforces both).

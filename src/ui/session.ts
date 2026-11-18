@@ -27,8 +27,16 @@ export type SessionDeps = {
   openReceipt(): void;
 };
 
-const KIND_LABEL: Record<SayOption['kind'], string> = { answer: 'Answer', alternative: 'Another way', question: 'Ask back' };
+const KIND_LABEL: Record<SayOption['kind'], string> = { answer: 'Answer', alternative: 'Another way', question: 'Question' };
 const HOLD_LINE = 'Hold on, please.';
+const FLAG_LABEL: Record<string, string> = { deadline: 'Deadline', cost: 'Cost', consent: 'Consent asked', decision: 'Decision', risk: 'Risk' };
+const MIC_ERRORS: Record<string, string> = {
+  'not-allowed': 'The microphone is blocked for this page. They can type on their side instead.',
+  'service-not-allowed': 'This browser will not listen on the device here. They can type on their side instead.',
+  'language-not-supported': 'On-device listening is not available for English here. They can type instead.',
+  'audio-capture': 'No microphone was found. They can type on their side instead.',
+  'restarting-too-often': 'Listening keeps stopping. Press Listen to try again, or let them type.',
+};
 
 export type SessionView = { el: HTMLElement; dispose(): void; refreshReceipt(): void };
 
@@ -63,7 +71,7 @@ export function renderSession(deps: SessionDeps): SessionView {
   stopBtn.addEventListener('click', () => stopSpeaking());
   const partnerInput = h('textarea', { id: 'partner-input', placeholder: 'Type here to talk to me', 'aria-label': 'Type a message to the Sotto user', maxlength: 600 });
   const partnerSend = h('button', { class: 'btn primary', id: 'partner-send' }, 'Send');
-  const flipBtn = h('button', { class: 'btn small', id: 'flip', 'aria-pressed': String(state.settings.flipPartner) }, 'Turn to them');
+  const flipBtn = h('button', { class: 'btn small', id: 'flip', 'aria-pressed': String(state.settings.flipPartner) }, 'Show them');
   const partnerSide = h(
     'aside',
     { class: `partner-side${state.settings.flipPartner ? ' flipped' : ''}`, 'aria-label': 'For the other person', id: 'partner-side' },
@@ -98,12 +106,12 @@ export function renderSession(deps: SessionDeps): SessionView {
       partnerSide.querySelector('form')!.requestSubmit();
     }
   });
-  const turnTop = h('button', { class: 'btn small phone-only', id: 'turn-top', 'aria-label': 'Open the other person\'s side' }, 'Them');
+  const turnTop = h('button', { class: 'btn small phone-only', id: 'turn-top', 'aria-label': 'Show the other person their side' }, 'Show them');
   const setFlip = (on: boolean) => {
     partnerSide.classList.toggle('flipped', on);
     el.classList.toggle('partner-open', on);
     flipBtn.setAttribute('aria-pressed', String(on));
-    flipBtn.textContent = on ? 'Turn back' : 'Turn to them';
+    flipBtn.textContent = on ? 'Back to me' : 'Show them';
     saveSettings({ flipPartner: on });
     if (on && window.matchMedia('(max-width: 899px)').matches) flipBtn.focus();
   };
@@ -356,10 +364,10 @@ export function renderSession(deps: SessionDeps): SessionView {
   const askCard = h('div', { class: 'ask-card ask skeleton' }, h('span', { class: 'label' }, 'Ask'), askBody);
   const flagEl = h('div', { class: 'flag', id: 'flag', hidden: true });
   const sayQuestion = h('button', { class: 'btn primary', id: 'say-question', disabled: true }, 'Say this question');
-  const repeatBtn = h('button', { class: 'btn', id: 'repeat', disabled: true }, 'Repeat it back');
+  const repeatBtn = h('button', { class: 'btn', id: 'repeat', disabled: true }, 'Check I understood');
   const repeatLine = h('div', { class: 'repeat-line', id: 'repeat-line', 'aria-live': 'polite' });
   const decisionsList = h('ol', { id: 'decisions-list' });
-  const decisionsCount = h('span', {}, 'Decisions and deadlines (0)');
+  const decisionsCount = h('span', {}, 'Deadlines, costs and decisions (0)');
   const decisions = h('details', { class: 'decisions', id: 'decisions' }, h('summary', {}, decisionsCount), decisionsList);
   const askPanel = h('section', { id: 'ask-panel', 'aria-label': 'Ask', hidden: true }, askLast, meansCard, askCard, flagEl, h('div', { class: 'row' }, sayQuestion, repeatBtn), repeatLine, decisions);
   const flags = state.flags;
@@ -389,11 +397,11 @@ export function renderSession(deps: SessionDeps): SessionView {
     repeatBtn.disabled = !final || !deps.helpers;
     if (final && r.flag && r.flag.kind !== 'none') {
       flagEl.hidden = false;
-      flagEl.replaceChildren(h('span', {}, `Flagged: ${r.flag.kind}`), h('q', {}, r.flag.quote));
+      flagEl.replaceChildren(h('span', {}, FLAG_LABEL[r.flag.kind] ?? 'Flagged'), h('q', {}, r.flag.quote));
       if (!flags.some((f) => f.quote === r.flag!.quote)) {
         flags.push(r.flag);
-        decisionsList.append(h('li', {}, h('strong', {}, `${r.flag.kind}: `), h('q', {}, r.flag.quote)));
-        setText(decisionsCount, `Decisions and deadlines (${flags.length})`);
+        decisionsList.append(h('li', {}, h('strong', {}, `${FLAG_LABEL[r.flag.kind] ?? 'Flagged'}: `), h('q', {}, r.flag.quote)));
+        setText(decisionsCount, `Deadlines, costs and decisions (${flags.length})`);
       }
     } else if (!final) flagEl.hidden = true;
     if (final) announce(r.means ? `Means: ${r.means}` : 'Ready.');
@@ -467,7 +475,7 @@ export function renderSession(deps: SessionDeps): SessionView {
             setText(interim, '');
             if (t) live.partner(t, 'speech');
           },
-          onError: (code) => setText(errorLine, code === 'not-allowed' ? 'The microphone is blocked for this page. The other person can type instead.' : `Listening stopped (${code}). Press Listen to try again.`),
+          onError: (code) => setText(errorLine, MIC_ERRORS[code] ?? 'Listening stopped. Press Listen to try again.'),
           onState: (on) => {
             listeningNow = on;
             receiptBtn.classList.toggle('listening', on);

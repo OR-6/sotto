@@ -100,7 +100,7 @@ export async function openSettings(onClose: () => void): Promise<void> {
         ['neutral', 'Neutral'],
         ['formal', 'Formal'],
       ]),
-      toggle('joke', 'Add a light joke now and then', 'For people who miss being the funny one.'),
+      toggle('joke', 'Add a light joke now and then', 'Adds a light joke where it fits.'),
       h('h3', {}, 'Look'),
       radioGroup('theme', 'Theme', [
         ['auto', 'Follow the device'],
@@ -109,7 +109,7 @@ export async function openSettings(onClose: () => void): Promise<void> {
         ['contrast', 'High contrast'],
       ]),
       radioGroup('size', 'Text size', [
-        ['normal', 'Large'],
+        ['normal', 'Standard'],
         ['large', 'Larger'],
       ]),
       h('h3', {}, 'Switch scanning'),

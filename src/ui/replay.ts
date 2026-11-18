@@ -5,7 +5,7 @@ import { formatMs, h, setText } from './dom';
 import type { Nav } from './nav';
 
 const nodes = (...xs: (Node | null)[]) => xs.filter((x): x is Node => x !== null);
-const KIND = { answer: 'Answer', alternative: 'Another way', question: 'Ask back' } as const;
+const KIND = { answer: 'Answer', alternative: 'Another way', question: 'Question' } as const;
 
 /** Loads the replays shipped with the app (same origin, static JSON). Invalid files are ignored. */
 export async function loadReplays(): Promise<Replay[]> {

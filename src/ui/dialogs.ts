@@ -128,7 +128,7 @@ export function openStats(onAgain: () => void, onHome: () => void, onSummary?: (
     s.answers
       ? h('div', { class: 'stats-grid' }, stat(String(s.answers), 'answers'), stat(formatMs(s.medianMs), 'median time to answer'), times.length >= 3 ? stat(formatMs(p90), '9 in 10 answers within') : null, enough ? stat(String(s.wpm), 'words a minute while answering') : null, stat(formatBytes(state.receipt.bytesOut), 'sent by Sotto this session'))
       : null,
-    enough ? h('p', { class: 'muted' }, 'For comparison: people typing on a communication device usually manage about 8 to 15 words a minute; conversation runs at 120 to 150.') : h('p', { class: 'muted' }, 'Words a minute appear after five answers and twenty seconds of answering.'),
+    enough ? h('p', { class: 'muted' }, 'For context: typing on a communication device is often 8 to 15 words a minute, and speech 120 to 150.') : h('p', { class: 'muted' }, 'Words a minute appear after five answers and twenty seconds of answering.'),
     onSummary ? h('p', { class: 'muted' }, 'Ending clears what was said. Write a summary first to keep it.') : null,
     h('div', { class: 'row' }, back, summary, again, saveBtn, home),
     saved,
