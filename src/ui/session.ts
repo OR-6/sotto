@@ -9,7 +9,7 @@ import { packById } from '../core/packs/packs';
 import { listen, type Listener } from '../speech/recognise';
 import { speak, stopSpeaking } from '../speech/speak';
 import { announce, formatBytes, h, setText } from './dom';
-import { state, saveSettings } from './state';
+import { state, saveSettings, savePhrases } from './state';
 import { createScanner } from './scan';
 import { openSettings } from './settings';
 
@@ -51,6 +51,15 @@ export function renderSession(deps: SessionDeps): SessionView {
   const againBtn = h('button', { class: 'btn small', id: 'say-again', disabled: true }, 'Say again');
   const stopBtn = h('button', { class: 'btn small', id: 'stop-speaking', disabled: true }, 'Stop');
   againBtn.addEventListener('click', () => lastSpoken && speakOut(lastSpoken));
+  const keepBtn = h('button', { class: 'btn small', id: 'keep-phrase', disabled: true }, 'Keep as a phrase');
+  keepBtn.addEventListener('click', () => {
+    const p = lastSpoken;
+    if (!p || state.phrases.includes(p)) return;
+    savePhrases([...state.phrases, p].slice(-24));
+    quick.append(h('button', { class: 'chip', onclick: () => say(p, 'quick') }, p));
+    keepBtn.disabled = true;
+    announce('Kept as a quick phrase.');
+  });
   stopBtn.addEventListener('click', () => stopSpeaking());
   const partnerInput = h('textarea', { id: 'partner-input', placeholder: 'Type here to talk to me', 'aria-label': 'Type a message to the Sotto user', maxlength: 600 });
   const partnerSend = h('button', { class: 'btn primary', id: 'partner-send' }, 'Send');
@@ -61,7 +70,7 @@ export function renderSession(deps: SessionDeps): SessionView {
     h('div', { class: 'partner-head' }, h('h2', {}, 'For the other person'), flipBtn),
     partnerNotice,
     partnerSaid,
-    h('div', { class: 'row' }, againBtn, stopBtn),
+    h('div', { class: 'row' }, againBtn, stopBtn, keepBtn),
     partnerTyping,
     history,
     h('form', { class: 'partner-form', id: 'partner-form' }, partnerInput, partnerSend),
@@ -415,6 +424,7 @@ export function renderSession(deps: SessionDeps): SessionView {
   function speakOut(text: string) {
     lastSpoken = text;
     againBtn.disabled = stopBtn.disabled = false;
+    keepBtn.disabled = state.phrases.includes(text) || text === HOLD_LINE;
     const resume = listeningNow;
     if (resume) stopListening();
     const ok = speak(text, { voiceName: state.settings.voiceName, rate: state.settings.rate, onEnd: () => resume && wantListening && !disposed && startListening() });
