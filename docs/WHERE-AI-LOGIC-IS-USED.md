@@ -19,7 +19,7 @@ Service setup: [src/firebase.ts](../src/firebase.ts) (`initializeApp`, App Check
 
 | Where | What |
 |---|---|
-| [src/ai/capability.ts:68](../src/ai/capability.ts#L68) | `LanguageModel.availability()`: feature detection only, no inference (the one direct Prompt API call) |
+| [src/ai/capability.ts:95](../src/ai/capability.ts#L95) | `LanguageModel.availability()`: feature detection only, no inference (the one direct Prompt API call) |
 | [src/ai/cloud.ts:18](../src/ai/cloud.ts#L18) | inference mode `InferenceMode.PREFER_IN_CLOUD` |
 | [src/ai/cloud.ts:19](../src/ai/cloud.ts#L19) | inference mode `InferenceMode.ONLY_IN_CLOUD` |
 | [src/ai/cloud.ts:20](../src/ai/cloud.ts#L20) | inference mode `InferenceMode.PREFER_ON_DEVICE` |
@@ -39,5 +39,5 @@ Service setup: [src/firebase.ts](../src/firebase.ts) (`initializeApp`, App Check
 | [src/ai/models.ts:116](../src/ai/models.ts#L116) | `inferenceSource` read (Receipt / post-check) |
 | [src/ai/models.ts:117](../src/ai/models.ts#L117) | `inferenceSource` read (Receipt / post-check) |
 | [src/ai/models.ts:121](../src/ai/models.ts#L121) | `initializeDeviceModel`: prepares / downloads the on-device model (on a user click) |
-| [src/firebase.ts:34](../src/firebase.ts#L34) | `getAI`: creates the AI Logic service (Gemini Developer API backend, limited-use App Check tokens) |
-| [src/firebase.ts:65](../src/firebase.ts#L65) | `getAI`: creates the AI Logic service (Gemini Developer API backend, limited-use App Check tokens) |
+| [src/firebase.ts:36](../src/firebase.ts#L36) | `getAI`: creates the AI Logic service (Gemini Developer API backend, limited-use App Check tokens) |
+| [src/firebase.ts:67](../src/firebase.ts#L67) | `getAI`: creates the AI Logic service (Gemini Developer API backend, limited-use App Check tokens) |

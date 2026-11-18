@@ -10,10 +10,11 @@ import { load, save, WARD } from './store';
 
 export type SummaryInput = { turns: readonly Turn[]; flags: readonly { kind: string; quote: string }[] };
 
-export function renderSummary(root: HTMLElement, ai: { device: Parameters<typeof summariseInCloud>[0]; cloud: () => Parameters<typeof summariseInCloud>[0] }, input: SummaryInput, done: () => void): void {
+export function renderSummary(root: HTMLElement, ai: { device: Parameters<typeof summariseInCloud>[0]; cloud: () => Promise<Parameters<typeof summariseInCloud>[0]> }, input: SummaryInput, done: () => void): void {
   type Item = { line: SummaryLine; on: boolean };
   const items: Item[] = [
-    ...input.flags.map((f) => ({ line: { kind: 'Flagged' as const, text: `${f.kind}: ${f.quote}` }, on: true })),
+    // Flags quote the other person's exact words, so like their other lines they start unticked.
+    ...input.flags.map((f) => ({ line: { kind: 'Flagged' as const, text: `${f.kind}: ${f.quote}` }, on: false })),
     ...input.turns.map((t) => ({ line: { kind: t.who === 'P' ? ('They' as const) : ('Me' as const), text: t.text }, on: t.who === 'Y' })),
   ];
   const out = h('pre', { class: 'outgoing', id: 'summary-outgoing' });
@@ -83,7 +84,7 @@ export function renderSummary(root: HTMLElement, ai: { device: Parameters<typeof
     status.textContent = where === 'cloud' ? 'Sending the ticked lines above…' : 'Writing the summary on this device…';
     try {
       const shown = summaryOutgoing(lines, state.config.cloudModel);
-      const r = where === 'cloud' ? await summariseInCloud(ai.cloud(), lines, state.config.cloudModel, async (o) => o.user === out.textContent && o.system === shown.system, state.receipt) : await summariseOnDevice(ai.device, lines, state.receipt);
+      const r = where === 'cloud' ? await summariseInCloud(await ai.cloud(), lines, state.config.cloudModel, async (o) => o.user === out.textContent && o.system === shown.system, state.receipt) : await summariseOnDevice(ai.device, lines, state.receipt);
       status.textContent = '';
       show(r);
     } catch (e) {
@@ -100,7 +101,7 @@ export function renderSummary(root: HTMLElement, ai: { device: Parameters<typeof
       'main',
       { class: 'choose', id: 'main' },
       h('h1', {}, 'Summary'),
-      h('p', { class: 'lede' }, 'Tick what to send to Google. Already ticked: your own lines, and the exact words that were flagged. Their other lines stay here unless you tick them.'),
+      h('p', { class: 'lede' }, 'Tick what to send to Google. Already ticked: only your own lines. What they said, including the flagged quotes, stays here unless you tick it.'),
       h('div', { class: 'row' }, count),
       list,
       h('div', { class: 'outgoing-pane' }, h('p', { class: 'outgoing-title' }, 'Exactly this will be sent to the cloud, with short instructions:'), out),

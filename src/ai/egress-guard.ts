@@ -171,7 +171,9 @@ export function createEgressGuard(inner: FetchFn, now: () => number = Date.now):
       log('allowed', 'matched cloud permit', url, bytes); // a response came back, so the body was sent
       return res;
     } catch (e) {
-      log('failed', 'network error before a response; counted as not sent', url, bytes);
+      // Cut off by a newer turn or a timeout: the body was already handed over, so count it as sent.
+      if ((e as { name?: string })?.name === 'AbortError') log('allowed', 'aborted after sending; counted as sent', url, bytes);
+      else log('failed', 'network error before a response; counted as not sent', url, bytes);
       throw e;
     }
   };

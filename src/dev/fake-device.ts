@@ -34,9 +34,28 @@ export function installFakeDevice(delayMs = 700): void {
       const t = setTimeout(resolve, ms);
       signal?.addEventListener('abort', () => (clearTimeout(t), reject(new DOMException('aborted', 'AbortError'))), { once: true });
     });
-  const LanguageModel = Object.assign(Function.prototype.bind.call(function () {}, null), {
-    availability: async () => 'available',
-    create: async () => ({
+  // Dev-only disguise so the app's native check passes (what a hostile extension could also do).
+  const names = new Map<unknown, string>();
+  const realToString = Function.prototype.toString;
+  const toString = function toString(this: unknown) {
+    return names.has(this) ? `function ${names.get(this)}() { [native code] }` : realToString.call(this as () => void);
+  };
+  names.set(toString, 'toString');
+  Function.prototype.toString = toString;
+  const create = async function create() {
+    return session;
+  };
+  const availability = async function availability() {
+    return 'available';
+  };
+  const LM = function LanguageModel() {};
+  [
+    [LM, 'LanguageModel'],
+    [create, 'create'],
+    [availability, 'availability'],
+  ].forEach(([f, n]) => names.set(f, n as string));
+  const LanguageModel = Object.assign(LM, { availability, create });
+  const session = ({
       prompt: async (contents: unknown, o?: { signal?: AbortSignal }) => (await wait(delayMs, o?.signal), reply(textOf(contents))),
       promptStreaming: (contents: unknown, o?: { signal?: AbortSignal }) => {
         const full = reply(textOf(contents));
@@ -51,8 +70,7 @@ export function installFakeDevice(delayMs = 700): void {
         });
       },
       destroy() {},
-    }),
-  });
+    });
   Object.defineProperty(window, 'LanguageModel', { value: LanguageModel, configurable: true });
   const badge = document.createElement('div');
   badge.textContent = 'DEV: fake on-device model';

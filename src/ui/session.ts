@@ -545,6 +545,16 @@ export function renderSession(deps: SessionDeps): SessionView {
         showAsk(e.result, true);
         showTiming(e.source);
         break;
+      case 'stopped':
+        stopListening();
+        el.classList.add('stopped');
+        receiptBtn.classList.add('cloud');
+        receiptBtn.replaceChildren('Live help stopped');
+        partnerNotice.classList.add('cloud');
+        setText(partnerNotice, 'Sotto stopped listening and suggesting on this device.');
+        setText(errorLine, `Live help stopped: ${e.reason} Quick phrases and typing still work. The receipt shows what happened.`);
+        paintOptions([], [], false);
+        break;
       case 'error':
         if (!deps.suggestions) break; // expected: no model here; the empty state already says so
         setText(errorLine, 'No suggestions for that line. The quick phrases and typing still work.');
@@ -571,6 +581,7 @@ export function renderSession(deps: SessionDeps): SessionView {
   window.addEventListener('offline', onNet);
 
   function refreshReceipt() {
+    if (el.classList.contains('stopped')) return;
     const b = state.receipt.bytesOut;
     // Desktop: "Private mode · nothing sent". Phone: "On device", short enough for one row.
     receiptBtn.replaceChildren(

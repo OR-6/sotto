@@ -33,7 +33,9 @@ export type LiveEvent =
   | { type: 'say'; options: SayOption[]; forTurn: number; ms: number; source: string; padded: number }
   | { type: 'ask-partial'; means?: string; ask?: string; forTurn: number }
   | { type: 'ask'; result: AskResult; forTurn: number; ms: number; source: string }
-  | { type: 'error'; mode: LiveMode; message: string; forTurn: number };
+  | { type: 'error'; mode: LiveMode; message: string; forTurn: number }
+  /** A guard fired (leak, missing or non-native runtime, blocked request): live help stops for good. */
+  | { type: 'stopped'; reason: string };
 
 export type LiveOptions = {
   backend: LiveBackend;
@@ -64,6 +66,8 @@ export type Live = {
 /** Speech finals this close together are one turn (a pause mid-sentence is not a new turn). */
 export const MERGE_MS = 1500;
 
+const GUARD_ERRORS = new Set(['LeakDetectedError', 'DeviceRuntimeMissingError', 'DeviceRuntimeNotNativeError', 'EgressBlockedError']);
+
 export function createLive(opts: LiveOptions): Live {
   const now = opts.now ?? (() => Date.now());
   let backend = opts.backend;
@@ -71,6 +75,7 @@ export function createLive(opts: LiveOptions): Live {
   let id = 0;
   let inflight: AbortController | null = null;
   let steerWords = '';
+  let stopped = false;
   const listeners = new Set<(e: LiveEvent) => void>();
   const emit = (e: LiveEvent) => listeners.forEach((fn) => fn(e));
 
@@ -141,7 +146,7 @@ export function createLive(opts: LiveOptions): Live {
 
   function run(): void {
     const last = lastPartner(turns);
-    if (!last) return;
+    if (!last || stopped) return;
     inflight?.abort(); // one call in flight per session: the newest turn wins
     const ac = new AbortController();
     inflight = ac;
@@ -204,6 +209,14 @@ export function createLive(opts: LiveOptions): Live {
   }
 
   function fail(e: unknown, mode: LiveMode, forTurn: number, ac: AbortController) {
+    if (GUARD_ERRORS.has(String((e as Error)?.name))) {
+      // Never carry on after a guard fired: stop live help for the rest of this session.
+      stopped = true;
+      inflight = null;
+      opts.receipt.recordDevice({ step: mode, mode: backend.mode, ms: 0, where: 'blocked', note: String((e as Error)?.name) });
+      emit({ type: 'stopped', reason: String((e as Error)?.message ?? e) });
+      return;
+    }
     if (ac.signal.aborted || inflight !== ac) return; // superseded by a newer call: say nothing
     inflight = null;
     if (backend.mode === 'ONLY_ON_DEVICE') opts.receipt.recordDevice({ step: mode, mode: backend.mode, ms: 0, where: 'failed', note: String((e as Error)?.name ?? 'Error') });

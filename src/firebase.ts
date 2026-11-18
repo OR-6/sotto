@@ -30,7 +30,9 @@ export const configMissing = Object.entries(firebaseConfig)
   .map(([k]) => k);
 
 // The SDK needs these strings to build a model, but an ONLY_ON_DEVICE call never contacts Firebase.
-const deviceApp = initializeApp(configMissing.length ? { apiKey: 'no-config', projectId: 'no-config', appId: '1:0:web:0' } : firebaseConfig);
+// The device app never gets the real config, so nothing it records (such as the SDK's usage
+// heartbeat) can ever be sent with a real project's requests.
+const deviceApp = initializeApp({ apiKey: 'device-only', projectId: 'device-only', appId: '1:0:web:0' });
 export const deviceAI: AI = getAI(deviceApp, { backend: new GoogleAIBackend() });
 
 const isLocalhost = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);

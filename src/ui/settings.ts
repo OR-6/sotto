@@ -4,6 +4,7 @@ import { loadVoices, offlineVoices, speak } from '../speech/speak';
 import { h } from './dom';
 import { DEFAULT_SETTINGS, saveSettings, savePhrases, state, type Settings } from './state';
 import { clearAll } from './store';
+import { cloudStarted } from '../firebase';
 
 function radioGroup<K extends keyof Settings>(key: K, label: string, options: [Settings[K], string][]): HTMLElement {
   const name = `set-${String(key)}`;
@@ -62,6 +63,8 @@ export async function openSettings(onClose: () => void): Promise<void> {
     state.voicePack = null;
     state.useVoice = false;
     cleared.textContent = 'Cleared: settings, phrases, briefs, summaries, your voice pack, saved numbers, and what Firebase stored for cloud steps.';
+    // Open database connections block deletion until the page goes; reload to finish it.
+    if (cloudStarted()) setTimeout(() => location.reload(), 1200);
   });
 
   const latencyOut = h('p', { class: 'tabular', id: 'latency-out', role: 'status' });

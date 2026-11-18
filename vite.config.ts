@@ -34,8 +34,19 @@ function labSave(): Plugin {
   };
 }
 
+// The same Content Security Policy the host sends, also inside the built page, so every build that
+// is tested (and any static host) carries it. frame-ancestors only works as a header (firebase.json).
+const CSP = "default-src 'self'; script-src 'self' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/; frame-src https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/; connect-src 'self' https://firebasevertexai.googleapis.com https://content-firebaseappcheck.googleapis.com https://firebaseinstallations.googleapis.com https://firebaseremoteconfig.googleapis.com https://www.google.com/recaptcha/; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'";
+function cspMeta(): Plugin {
+  return {
+    name: 'sotto-csp',
+    apply: 'build',
+    transformIndexHtml: (html) => html.replace('<meta charset="utf-8" />', `<meta charset="utf-8" />\n    <meta http-equiv="Content-Security-Policy" content="${CSP}" />`),
+  };
+}
+
 export default defineConfig({
-  plugins: [labSave()],
+  plugins: [labSave(), cspMeta()],
   build: {
     rollupOptions: {
       input: {

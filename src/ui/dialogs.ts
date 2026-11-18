@@ -92,7 +92,8 @@ export function confirmCloudLive(deviceCanRun: boolean, onYes: () => void): void
   const no = h('button', { class: 'btn primary', id: 'cloud-no' }, 'Keep Private mode');
   const d = dialog('cloud-confirm', 'Cloud live mode', [
     h('p', {}, deviceCanRun ? 'This browser can make suggestions on its own. Private mode is the better choice here.' : 'This browser cannot make suggestions on its own, so they would have to come from Google.'),
-    h('p', {}, 'With Cloud live mode on, everything said in this conversation is sent to Google\'s Gemini service, for this session only. Google\'s terms decide how long it is kept. A red banner stays on both sides of the screen.'),
+    h('p', {}, 'With Cloud live mode on, everything said in this conversation is sent to Google\'s Gemini service, for this conversation only. A red banner stays on both sides of the screen.'),
+    h('p', {}, 'Sotto uses Google\'s free Gemini service here. On the free service Google may use what is sent to improve its products, and people at Google may read it. Google\'s terms decide how long it is kept.'),
     h('p', { class: 'muted' }, 'Tell the other person before you turn it on. Do not use it for health details you would not email. Prepare and the summary never need it.'),
     h('div', { class: 'row' }, no, yes),
   ]);

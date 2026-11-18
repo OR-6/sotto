@@ -17,10 +17,15 @@ describe('device runtime pre-check', () => {
 });
 
 describe('native LanguageModel check', () => {
-  it('refuses a plain object or a script function, accepts a native one', () => {
+  it('refuses plain objects, script functions, bound functions and proxies', () => {
+    const named = (n: string) => ({ [n]: function () {} })[n];
     expect(deviceRuntimeNative({ LanguageModel: { availability: () => 'available' } })).toBe(false);
-    expect(deviceRuntimeNative({ LanguageModel: function LanguageModel() {} })).toBe(false);
-    expect(deviceRuntimeNative({ LanguageModel: Math.max })).toBe(true);
+    expect(deviceRuntimeNative({ LanguageModel: Object.assign(named('LanguageModel'), { availability: Math.max, create: Math.min }) })).toBe(false);
+    expect(deviceRuntimeNative({ LanguageModel: Object.assign(Function.prototype.bind.call(Math.max, null), { availability: Math.max, create: Math.min }) })).toBe(false);
+    expect(deviceRuntimeNative({ LanguageModel: Object.assign(new Proxy(Math.max, {}), { availability: Math.max, create: Math.min }) })).toBe(false);
     expect(deviceRuntimeNative({})).toBe(false);
+  });
+  it('a native name is required for each method (Math.max is native but not named LanguageModel)', () => {
+    expect(deviceRuntimeNative({ LanguageModel: Math.max })).toBe(false);
   });
 });

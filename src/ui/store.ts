@@ -2,7 +2,8 @@
 // allow-list that never includes transcripts or receipts (invariant I6). Every read and write
 // is wrapped: in a private window or with storage blocked, the app still works, it just forgets.
 
-export const STORE_KEYS = ['settings', 'phrases', 'voicePack', 'briefs', 'summaries', 'stats'] as const;
+/** 'resume' holds the conversation setup for one reload (no conversation content), then is cleared. */
+export const STORE_KEYS = ['settings', 'phrases', 'voicePack', 'briefs', 'summaries', 'stats', 'resume'] as const;
 export type StoreKey = (typeof STORE_KEYS)[number];
 
 const PREFIX = 'sotto.v1.';

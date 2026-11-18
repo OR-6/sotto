@@ -124,6 +124,24 @@ describe('live loop', () => {
     expect(live.turns).toHaveLength(2);
   });
 
+  it('a guard error stops live help for the rest of the session', async () => {
+    let calls = 0;
+    const leak: StreamFn = async () => {
+      calls++;
+      const e = new Error('inferenceSource was in_cloud');
+      e.name = 'LeakDetectedError';
+      throw e;
+    };
+    const { live, receipt, until } = setup({ say: leak });
+    live.partner('Hi');
+    const e = await until((x) => x.type === 'stopped');
+    expect(e).toMatchObject({ type: 'stopped' });
+    expect(receipt.steps.at(-1)).toMatchObject({ where: 'blocked' });
+    live.partner('Hello again');
+    await new Promise((r) => setTimeout(r, 50));
+    expect(calls).toBe(1); // never called again
+  });
+
   it('ignores empty input', () => {
     const { live } = setup();
     expect(live.partner('   ')).toBeUndefined();

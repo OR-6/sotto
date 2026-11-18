@@ -38,16 +38,28 @@ const FAKE = `(() => {
   };
   const wait = (ms, s) => new Promise((res, rej) => { const t = setTimeout(res, ms); s && s.addEventListener('abort', () => { clearTimeout(t); rej(new DOMException('aborted', 'AbortError')); }); });
   window.__prompts = 0;
-  // Presents as a native function (a bound function's toString says [native code]), so the app's
-  // native check passes; this is test-only and is also why that check is a hint, not a proof.
-  window.LanguageModel = Object.assign(Function.prototype.bind.call(function () {}, null), {
-    availability: async () => 'available',
-    create: async () => ({
+  // Test-only disguise: patches Function.prototype.toString so these fakes report themselves as
+  // native. It is exactly what a hostile extension could do, which is why the app's native check
+  // is documented as a hint, not a proof.
+  const names = new Map();
+  const realToString = Function.prototype.toString;
+  const toString = function toString() { return names.has(this) ? 'function ' + names.get(this) + '() { [native code] }' : realToString.call(this); };
+  names.set(toString, 'toString');
+  Function.prototype.toString = toString;
+  const LM = function LanguageModel() {};
+  names.set(LM, 'LanguageModel');
+  const availability = async function availability() { return 'available'; };
+  names.set(availability, 'availability');
+  window.LanguageModel = Object.assign(LM, {
+    availability,
+    create: Object.assign(async function create() { return session; }, {}),
+  });
+  names.set(window.LanguageModel.create, 'create');
+  var session = ({
       prompt: async (c, o) => { window.__prompts++; await wait(300, o && o.signal); return reply(JSON.stringify(c)); },
       promptStreaming: (c, o) => { window.__prompts++; const full = reply(JSON.stringify(c)); let i = 0; return new ReadableStream({ async pull(ctl) { await wait(i ? 30 : 200, o && o.signal); if (i >= full.length) return ctl.close(); ctl.enqueue(full.slice(i, i + 20)); i += 20; } }); },
       destroy() {},
-    }),
-  });
+    });
 })();`;
 
 // A scripted local recogniser (test-only): window.__hear(text) plays interim words, then a final.
@@ -90,7 +102,8 @@ async function noHorizontalScroll(page, label) {
 }
 
 async function context(browser, { width, height, theme, fake, speech }) {
-  const ctx = await browser.newContext({ viewport: { width, height }, colorScheme: theme, reducedMotion: 'reduce' });
+  // bypassCSP only so the test can inject axe-core; the page's own CSP is checked separately.
+  const ctx = await browser.newContext({ viewport: { width, height }, colorScheme: theme, reducedMotion: 'reduce', bypassCSP: true });
   if (fake) await ctx.addInitScript(FAKE);
   if (speech) await ctx.addInitScript(FAKE_SPEECH);
   const page = await ctx.newPage();
@@ -171,6 +184,17 @@ async function run() {
         }
         check(aiRequests.length === 0, `no AI request without consent to Cloud live (${tag})`);
         check(errors.length === 0, `no page errors (${tag}, no model)${errors.length ? ': ' + errors.join(' | ') : ''}`);
+        await ctx.close();
+      }
+
+      // ---- World 1b: a script-defined LanguageModel without any disguise (a bound function) ----
+      if (full) {
+        const ctx = await browser.newContext({ viewport: { width: size.width, height: size.height } });
+        await ctx.addInitScript(`window.LanguageModel = Object.assign(Function.prototype.bind.call(function () {}, null), { availability: async () => 'available', create: async () => ({ prompt: async () => '{}' }) });`);
+        const page = await ctx.newPage();
+        await page.goto(BASE + '/', { waitUntil: 'networkidle' });
+        await page.waitForSelector('#start');
+        check(await page.isVisible('text=This browser cannot run the on-device model.'), 'a LanguageModel that is not the browser\'s own is refused');
         await ctx.close();
       }
 

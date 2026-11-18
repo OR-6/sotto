@@ -1,5 +1,5 @@
 // The app shell: boot, capability, screens, the Cloud live switch.
-import { deviceRuntimeNative, readDeviceState } from '../ai/capability';
+import { deviceRuntimeNative, readDeviceState, setRequireNative } from '../ai/capability';
 import { createCloudLiveBackend, setCloudLive, cloudState } from '../ai/cloud';
 import { createLive, type Live, type LiveBackend } from '../ai/live';
 import { createPrivateBackend, type PrivateBackend } from '../ai/private-backend';
@@ -7,7 +7,7 @@ import { loadConfig } from '../config';
 import { packById } from '../core/packs/packs';
 import { ASK_SCHEMA, ASK_SYSTEM } from '../core/prompts/ask';
 import { SAY_SCHEMA, SAY_SYSTEM } from '../core/prompts/say';
-import { deviceAI, getCloud } from '../firebase';
+import { cloudStarted, deviceAI, getCloud } from '../firebase';
 import { installSpeech, readSpeechState } from '../speech/recognise';
 import { loadVoices, offlineVoices } from '../speech/speak';
 import { confirmCloudLive, openReceipt, openStats } from './dialogs';
@@ -29,7 +29,9 @@ import { voiceDigest } from '../core/prompts/voice';
 import { loadReplays, renderReplayList } from './replay';
 import type { Replay } from '../core/replay';
 import { applyTheme, state } from './state';
-import { WARD } from './store';
+import { load, save } from './store';
+import type { Brief } from '../core/prompts/prepare';
+type ResumeState = { pack: string; mode: 'say' | 'ask'; situationText: string; partnerLabel: string; brief: Brief | null; consent: boolean; at: number };
 
 let root: HTMLElement;
 let banner: HTMLElement;
@@ -39,7 +41,12 @@ let view: SessionView | null = null;
 let replays: Replay[] = [];
 
 /** Device for device steps; the cloud app (App Check, Installations) only when a cloud step runs. */
-const aiPair = { device: deviceAI, cloud: () => getCloud().ai };
+// The cloud app (App Check, Installations, Remote Config) starts only when the user presses Send.
+const cloudAI = async () => {
+  await ensureConfig();
+  return getCloud().ai;
+};
+const aiPair = { device: deviceAI, cloud: cloudAI };
 
 let configLoaded: Promise<void> | null = null;
 /** Remote Config (cloud model name, kill switch), fetched on the first cloud screen. */
@@ -65,7 +72,7 @@ const nav: Nav = {
   askCloudLive() {
     confirmCloudLive(state.device === 'available', async () => {
       await ensureConfig();
-      resetSession(); // turns heard in Private mode never become Cloud live prompts
+      resetSession(false); // turns heard in Private mode never become Cloud live prompts
       state.cloudLive = true;
       setCloudLive(true);
       renderBanner();
@@ -82,7 +89,7 @@ function renderBanner() {
   offBtn.addEventListener('click', () => {
     state.cloudLive = false;
     setCloudLive(false);
-    resetSession(); // Cloud live turns do not carry into Private mode either
+    resetSession(false); // Cloud live turns do not carry into Private mode either (the receipt stays)
     renderBanner();
     if (live && privateBackend) live.setBackend(privateBackend);
     go('start');
@@ -96,12 +103,12 @@ function go(screen: Screen) {
   window.scrollTo(0, 0);
   if (screen === 'start') renderStart(root, nav);
   else if (screen === 'choose') renderChoose(root, nav, begin);
-  else if (screen === 'prepare') (void ensureConfig(), renderPrepare(root, nav, aiPair));
+  else if (screen === 'prepare') renderPrepare(root, nav, aiPair);
   else if (screen === 'session') startSession();
   else if (screen === 'replay') renderReplayList(root, nav, replays);
   else if (screen === 'safety') renderSafety(root, nav, { live: hasDevice() ? runRedLive : undefined });
-  else if (screen === 'voice') (void ensureConfig(), renderVoice(root, nav, { cloud: () => getCloud().ai, compare: hasDevice() ? compareVoice : undefined }));
-  else if (screen === 'summary') ((WARD ? undefined : void ensureConfig()), renderSummary(root, aiPair, { turns: live?.turns ?? [], flags: state.flags }, () => (resetSession(), go('choose'))));
+  else if (screen === 'voice') (renderVoice(root, nav, { cloud: cloudAI, compare: hasDevice() ? compareVoice : undefined }));
+  else if (screen === 'summary') (renderSummary(root, aiPair, { turns: live?.turns ?? [], flags: state.flags }, () => (resetSession(), go('choose'))));
   const main = root.querySelector('main');
   if (main) {
     main.setAttribute('tabindex', '-1');
@@ -109,7 +116,20 @@ function go(screen: Screen) {
   }
 }
 
+/**
+ * A cloud step loads Google's App Check script into this page. Before a Private-mode conversation
+ * the page reloads, so nothing from a cloud step is running beside what is said. The setup
+ * (situation, who, mode, the brief in use, the consent tick) is carried across once.
+ */
+function reloadForPrivate(): boolean {
+  if (state.cloudLive || !cloudStarted()) return false;
+  save('resume', { pack: state.pack, mode: state.mode, situationText: state.situationText, partnerLabel: state.partnerLabel, brief: state.useBrief ? state.brief : null, consent: state.settings.consent, at: Date.now() });
+  location.replace(`${location.pathname}?resume`);
+  return true;
+}
+
 async function begin() {
+  if (reloadForPrivate()) return;
   // A user gesture: install the speech pack if it is downloadable (never server recognition).
   if (state.speech === 'downloadable') {
     await installSpeech('en-US');
@@ -221,27 +241,46 @@ async function measureLatency() {
 }
 
 /** Ends a conversation: what was said is dropped from memory. */
-function resetSession() {
+function resetSession(clearReceipt = true) {
   live?.clear();
   state.answers = [];
   state.flags.length = 0;
-  state.receipt.clear();
+  if (clearReceipt) {
+    state.receipt.clear();
+    // Cloud live mode is per conversation: the next one starts in Private mode and asks again.
+    if (state.cloudLive) {
+      state.cloudLive = false;
+      setCloudLive(false);
+      renderBanner();
+    }
+  }
 }
 
 export async function boot(container: HTMLElement): Promise<void> {
   applyTheme();
   loadVoice();
+  const resume = new URLSearchParams(location.search).has('resume') ? load<ResumeState | null>('resume', null) : null;
+  save('resume', null);
+  if (resume) history.replaceState(null, '', location.pathname);
   banner = h('div', { class: 'cloud-banner', id: 'cloud-banner', role: 'alert', hidden: true });
   root = h('div', { id: 'screen' });
   container.replaceChildren(banner, root, h('div', { id: 'announcer', class: 'sr-only', 'aria-live': 'polite' }));
   const [device, speech, voices] = await Promise.all([readDeviceState(), readSpeechState('en-US'), loadVoices()]);
-  // A LanguageModel defined by a page script or extension would receive every live prompt: refuse it.
+  // A LanguageModel defined by a page script or extension would receive every live prompt: refuse it,
+  // now and at every later call.
+  setRequireNative(true);
   state.device = device !== 'missing' && !deviceRuntimeNative() ? 'unavailable' : device;
   state.speech = speech;
   if (state.device === 'available') state.measure = measureLatency;
   state.voices = offlineVoices(voices).length;
   replays = await loadReplays();
   state.replays = replays.length;
+  if (resume && Date.now() - resume.at < 60_000) {
+    Object.assign(state, { pack: resume.pack, mode: resume.mode, situationText: resume.situationText, partnerLabel: resume.partnerLabel });
+    state.settings.consent = resume.consent;
+    if (resume.brief) ((state.brief = resume.brief), (state.useBrief = true));
+    return void begin();
+  }
   go('start');
   // Remote Config is fetched only when a cloud step is opened (ensureConfig), so Private mode
   // makes no request at all.

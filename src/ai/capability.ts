@@ -32,18 +32,45 @@ export function deviceRuntimePresent(env: object = globalThis): boolean {
  * also fake `toString`. Documented as a limit in the README.
  */
 export function deviceRuntimeNative(env: object = globalThis): boolean {
-  const lm = (env as { LanguageModel?: unknown }).LanguageModel;
-  if (typeof lm !== 'function') return false;
+  const raw = (env as { LanguageModel?: unknown }).LanguageModel;
+  if (typeof raw !== 'function') return false;
+  const lm = raw as unknown as { availability?: unknown; create?: unknown; prototype?: Record<string, unknown> };
   try {
-    return /\{\s*\[native code\]\s*\}\s*$/.test(Function.prototype.toString.call(lm));
+    const src = Function.prototype.toString;
+    // Each must be the browser's own, by name: a bound function or a Proxy reports no name, and a
+    // patched method shows its source. toString itself must be native, or it could lie.
+    const native = (f: unknown, name: string) => typeof f === 'function' && new RegExp(`^function ${name}\\(\\) \\{\\s*\\[native code\\]\\s*\\}$`).test(src.call(f));
+    return (
+      native(src, 'toString') &&
+      native(lm, 'LanguageModel') &&
+      native(lm.availability, 'availability') &&
+      native(lm.create, 'create') &&
+      (lm.prototype?.prompt === undefined || native(lm.prototype.prompt, 'prompt')) &&
+      (lm.prototype?.promptStreaming === undefined || native(lm.prototype.promptStreaming, 'promptStreaming'))
+    );
   } catch {
     return false;
+  }
+}
+
+/** Set by the app at boot: device-only models then also require the native runtime, at every call. */
+let requireNative = false;
+export function setRequireNative(on: boolean): void {
+  requireNative = on;
+}
+
+export class DeviceRuntimeNotNativeError extends Error {
+  readonly code = 'sotto/device-runtime-not-native';
+  constructor() {
+    super('The on-device model in this page is not the browser\'s own. Live help is off so that nothing said here goes to it.');
+    this.name = 'DeviceRuntimeNotNativeError';
   }
 }
 
 /** Throws unless the on-device runtime is present. Call before creating any device-only model. */
 export function assertDeviceRuntime(env: object = globalThis): void {
   if (!deviceRuntimePresent(env)) throw new DeviceRuntimeMissingError();
+  if (requireNative && !deviceRuntimeNative(env)) throw new DeviceRuntimeNotNativeError();
 }
 
 // `LanguageModel.availability()` is the one direct Prompt API call allowed in this repo, and

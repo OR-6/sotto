@@ -9,7 +9,7 @@ import { load, save } from './store';
 import type { Nav } from './nav';
 
 export type VoiceDeps = {
-  cloud: () => Parameters<typeof buildVoicePack>[0];
+  cloud: () => Promise<Parameters<typeof buildVoicePack>[0]>;
   /** Runs Say on device for one line, without and with the voice digest. Undefined without a model. */
   compare?: (voice: string) => Promise<{ line: string; before: string[]; after: string[] }>;
 };
@@ -96,7 +96,7 @@ export function renderVoice(root: HTMLElement, nav: Nav, deps: VoiceDeps): void 
     send.disabled = true;
     status.textContent = 'Sending the text above and building your voice…';
     try {
-      const r = await buildVoicePack(deps.cloud(), list, answers, state.config.cloudModel, async (o) => o.user === out.textContent, state.receipt);
+      const r = await buildVoicePack(await deps.cloud(), list, answers, state.config.cloudModel, async (o) => o.user === out.textContent, state.receipt);
       state.voicePack = r.pack;
       state.useVoice = true;
       save('voicePack', { pack: r.pack, on: true });

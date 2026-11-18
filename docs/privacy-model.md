@@ -26,7 +26,7 @@ Sotto hears conversations: medical appointments, rent negotiations, a hospital r
 - `check:ai` fails the build if any other file uses a cloud-capable inference mode or creates a model ([scripts/check-ai.mjs](../scripts/check-ai.mjs)).
 - `cloudCall` asks for approval of the exact outgoing text before anything is built ([src/ai/cloud.ts](../src/ai/cloud.ts)). For Prepare, the voice pack and the Summary, the approval compares the request with the text shown in the outgoing pane on screen. For Cloud live mode, the approval is the per-session switch, with a red banner on every screen, including the side the other person sees.
 
-**I3. The user decides what leaves.** Prepare sends the one line you typed. The Summary sends only the lines you tick. Ticked by default: your own lines and the flagged items, which quote the other person's exact words; their other lines only if you tick them. The voice pack sends only your phrases and five answers.
+**I3. The user decides what leaves.** Prepare sends the one line you typed. The Summary sends only the lines you tick. Ticked by default: only your own lines. What the other person said, including the flagged quotes, leaves only if you tick it. The voice pack sends only your phrases and five answers.
 
 **I4. Everything that leaves is recorded.** The receipt counts bytes at the network (after a response came back), keeps the exact text and its SHA-256 for every cloud step, and lists every other request the page made, with its purpose ([src/core/receipt.ts](../src/core/receipt.ts), [src/ui/dialogs.ts](../src/ui/dialogs.ts)).
 
