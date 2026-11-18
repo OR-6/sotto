@@ -105,6 +105,7 @@ export function renderSession(deps: SessionDeps): SessionView {
     h('span', { class: 'mode-switch', role: 'group', 'aria-label': 'Mode' }, sayBtn, askBtn),
     h('span', { class: 'where situation muted', title: 'Situation' }, situation),
     where,
+    state.useBrief && state.brief ? h('span', { class: 'where situation', id: 'brief-on', title: 'The brief you prepared shapes the suggestions' }, 'Brief on') : null,
     h('span', { class: 'spacer' }),
     state.speech === 'available' ? h('span', { class: 'listen-state', role: 'status' }, pulse, listenLabel) : null,
     state.speech === 'available' ? listenBtn : null,

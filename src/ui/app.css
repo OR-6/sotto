@@ -329,3 +329,21 @@ table.receipt td.hash { font-family: ui-monospace, monospace; font-size: 12px; w
   .pulse.on { animation: none; box-shadow: 0 0 0 4px rgb(111 208 140 / 30%); }
   .partner-side { transition: none; }
 }
+
+/* ---------- prepare ---------- */
+.lede { font-size: 20px; max-width: 46em; margin: 0 0 8px; }
+.outgoing-pane { border: 1px dashed var(--rim-strong); border-radius: var(--radius); padding: 14px 16px; margin: 16px 0; background: var(--surface); }
+.outgoing-title { margin: 0 0 8px; font-weight: 700; }
+pre.outgoing { margin: 0; white-space: pre-wrap; font: 18px/1.4 ui-monospace, 'SF Mono', Menlo, monospace; }
+pre.outgoing.small { font-size: 14px; color: var(--muted); margin-top: 8px; }
+.outgoing-pane summary { cursor: pointer; color: var(--muted); margin-top: 8px; min-height: 32px; }
+.where-line { color: var(--muted); margin: 16px 0 8px; }
+.brief { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); margin: 8px 0 16px; }
+.brief-card { border: 1px solid var(--rim); border-radius: var(--radius); background: var(--surface); padding: 14px 18px; }
+.brief-card h3 { margin: 0 0 8px; font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cool); }
+.brief-card p, .brief-card li, .brief-card dd { font-size: 18px; }
+.brief-card ul { margin: 0; padding-left: 20px; }
+.brief-card li { margin: 4px 0; }
+.brief-card dl { margin: 0; }
+.brief-card dt { font-weight: 700; margin-top: 6px; }
+.brief-card dd { margin: 0 0 4px; color: var(--muted); }

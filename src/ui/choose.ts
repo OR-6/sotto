@@ -61,6 +61,12 @@ export function renderChoose(root: HTMLElement, nav: Nav, begin: () => void): vo
     whoChips.forEach((x) => x.setAttribute('aria-pressed', String(!whoInput.value && x.dataset.who === state.partnerLabel)));
   });
 
+  const prepareCard = h(
+    'button',
+    { class: 'path', id: 'go-prepare', onclick: () => nav.go('prepare') },
+    h('strong', {}, state.brief ? 'Brief ready' : 'Prepare first (optional)'),
+    h('span', {}, state.brief ? (state.useBrief ? 'Sotto will use it during the conversation. Open to read or change it.' : 'Not in use. Open to turn it on.') : 'A brief from the cloud before you go: what will happen, the words you will hear, the questions to ask.'),
+  );
   const beginBtn = h('button', { class: 'btn primary', id: 'begin' }, 'Begin');
   beginBtn.addEventListener('click', begin);
 
@@ -76,6 +82,7 @@ export function renderChoose(root: HTMLElement, nav: Nav, begin: () => void): vo
       h('span', { class: 'field-label', id: 'who-label' }, 'Who are you talking to?'),
       h('div', { class: 'row', role: 'group', 'aria-labelledby': 'who-label' }, whoChips),
       h('div', { style: 'margin-top:12px' }, whoInput),
+      h('div', { class: 'paths' }, prepareCard),
       h('div', { class: 'row', style: 'margin-top:28px' }, beginBtn, h('button', { class: 'btn', onclick: () => nav.go('start') }, 'Back')),
     ),
   );

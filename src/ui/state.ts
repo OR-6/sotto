@@ -5,6 +5,7 @@ import type { Tone } from '../core/context';
 import { QUICK_PHRASES } from '../core/filter';
 import { createReceipt } from '../core/receipt';
 import type { Answer } from '../core/stats';
+import type { Brief } from '../core/prompts/prepare';
 import type { SpeechState } from '../speech/recognise';
 import { load, save } from './store';
 
@@ -51,6 +52,8 @@ export const state = {
   /** Recorded on-device sessions available for Replay. */
   replays: 0,
   receipt: createReceipt(),
+  brief: null as Brief | null,
+  useBrief: false,
   answers: [] as Answer[],
 };
 

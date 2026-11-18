@@ -16,6 +16,7 @@ import type { Nav, Screen } from './nav';
 import { renderChoose } from './choose';
 import { renderSession, type SessionView } from './session';
 import { renderStart } from './start';
+import { renderPrepare } from './prepare';
 import { applyTheme, state } from './state';
 
 let root: HTMLElement;
@@ -66,6 +67,7 @@ function go(screen: Screen) {
   window.scrollTo(0, 0);
   if (screen === 'start') renderStart(root, nav);
   else if (screen === 'choose') renderChoose(root, nav, begin);
+  else if (screen === 'prepare') renderPrepare(root, nav, ai);
   else if (screen === 'session') startSession();
   const main = root.querySelector('main');
   if (main) {
@@ -95,7 +97,7 @@ function startSession() {
     partner: state.partnerLabel || pack?.partner || 'someone',
     tone: state.settings.tone,
     joke: state.settings.joke,
-    brief: state.situationText ? '' : (pack?.digest ?? ''),
+    brief: [state.useBrief && state.brief ? state.brief.digest : '', state.situationText ? '' : (pack?.digest ?? '')].filter(Boolean).join(' '),
     voice: '',
   };
   view = renderSession({
