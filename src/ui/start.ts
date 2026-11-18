@@ -3,6 +3,7 @@ import { h } from './dom';
 import { state, saveSettings } from './state';
 import type { Nav } from './nav';
 import { openSettings } from './settings';
+import { WARD } from './store';
 
 export function capabilityLines(): HTMLElement {
   const line = (ok: 'yes' | 'wait' | 'no', text: string) => h('div', { class: 'cap-line' }, h('span', { class: `cap-dot ${ok}`, 'aria-hidden': 'true' }), h('span', {}, text));
@@ -58,13 +59,14 @@ export function renderStart(root: HTMLElement, nav: Nav): void {
     state.replays > 0
       ? h('button', { class: 'path', id: 'replay', onclick: () => nav.go('replay') }, h('strong', {}, 'Replay a real session'), h('span', {}, 'Recorded on a laptop with the on-device model, with its real timings.'))
       : null,
-    cloudBtn,
+    WARD ? null : cloudBtn,
   );
 
   root.replaceChildren(
     h(
       'main',
       { class: 'start', id: 'main' },
+      WARD ? h('p', { class: 'ward-badge', id: 'ward-badge' }, 'Ward mode: Private mode only, nothing kept on this device') : null,
       h('h1', { class: 'wordmark' }, 'Sotto', h('span', {}, '.')),
       h('p', { class: 'tagline' }, 'The quiet voice beside you.'),
       h(

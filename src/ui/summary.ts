@@ -6,7 +6,7 @@ import type { SummaryLine } from '../core/prompts/summary';
 import type { Turn } from '../core/turns';
 import { append, formatBytes, formatMs, h } from './dom';
 import { state } from './state';
-import { load, save } from './store';
+import { load, save, WARD } from './store';
 
 export type SummaryInput = { turns: readonly Turn[]; flags: readonly { kind: string; quote: string }[] };
 
@@ -20,14 +20,14 @@ export function renderSummary(root: HTMLElement, ai: { device: Parameters<typeof
   const count = h('span', { class: 'muted', id: 'summary-count' });
   const status = h('p', { class: 'note-line', role: 'status' });
   const result = h('div', { id: 'summary-result' });
-  const send = h('button', { class: 'btn primary', id: 'summary-send' }, 'Send the ticked lines and summarise');
+  const send = h('button', { class: 'btn primary', id: 'summary-send', hidden: WARD }, 'Send the ticked lines and summarise');
   const local = h('button', { class: 'btn', id: 'summary-local', disabled: state.device !== 'available' }, 'Summarise on this device instead');
   const picked = () => items.filter((i) => i.on).map((i) => i.line);
   const refresh = () => {
     const lines = picked();
     out.textContent = lines.length ? summaryOutgoing(lines, state.config.cloudModel).user : '(nothing ticked: nothing will be sent)';
     count.textContent = `${lines.length} of ${items.length} lines ticked`;
-    send.disabled = !lines.length || !state.config.cloudEnabled;
+    send.disabled = WARD || !lines.length || !state.config.cloudEnabled;
     local.disabled = !lines.length || state.device !== 'available';
   };
 

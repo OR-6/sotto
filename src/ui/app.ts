@@ -29,6 +29,7 @@ import { voiceDigest } from '../core/prompts/voice';
 import { loadReplays, renderReplayList } from './replay';
 import type { Replay } from '../core/replay';
 import { applyTheme, state } from './state';
+import { WARD } from './store';
 
 let root: HTMLElement;
 let banner: HTMLElement;
@@ -100,7 +101,7 @@ function go(screen: Screen) {
   else if (screen === 'replay') renderReplayList(root, nav, replays);
   else if (screen === 'safety') renderSafety(root, nav, { live: hasDevice() ? runRedLive : undefined });
   else if (screen === 'voice') (void ensureConfig(), renderVoice(root, nav, { cloud: () => getCloud().ai, compare: hasDevice() ? compareVoice : undefined }));
-  else if (screen === 'summary') (void ensureConfig(), renderSummary(root, aiPair, { turns: live?.turns ?? [], flags: state.flags }, () => (resetSession(), go('choose'))));
+  else if (screen === 'summary') ((WARD ? undefined : void ensureConfig()), renderSummary(root, aiPair, { turns: live?.turns ?? [], flags: state.flags }, () => (resetSession(), go('choose'))));
   const main = root.querySelector('main');
   if (main) {
     main.setAttribute('tabindex', '-1');

@@ -3,6 +3,7 @@ import { PACKS, packById } from '../core/packs/packs';
 import { h } from './dom';
 import { state } from './state';
 import type { Nav } from './nav';
+import { WARD } from './store';
 
 const WHO = ['the barista', 'my doctor', 'the pharmacist', 'my landlord', 'the official', 'the bank adviser', 'the teacher', 'my family', 'a stranger'];
 
@@ -95,7 +96,7 @@ export function renderChoose(root: HTMLElement, nav: Nav, begin: () => void): vo
       h('span', { class: 'field-label', id: 'who-label' }, 'Who are you talking to?'),
       h('div', { class: 'row', role: 'group', 'aria-labelledby': 'who-label' }, whoChips),
       h('div', { style: 'margin-top:12px' }, whoInput),
-      h('div', { class: 'paths' }, prepareCard, voiceCard),
+      WARD ? null : h('div', { class: 'paths' }, prepareCard, voiceCard),
       h('div', { class: 'row', style: 'margin-top:28px' }, beginBtn, h('button', { class: 'btn', onclick: () => nav.go('start') }, 'Back')),
     ),
   );

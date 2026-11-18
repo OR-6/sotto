@@ -7,8 +7,15 @@ export type StoreKey = (typeof STORE_KEYS)[number];
 
 const PREFIX = 'sotto.v1.';
 
+/**
+ * Ward mode (a shared device, opened with ?ward): nothing is read from or written to storage,
+ * so the next person finds nothing of the last.
+ */
+export const WARD = typeof location !== 'undefined' && new URLSearchParams(location.search).has('ward');
+
 export function load<T>(key: StoreKey, fallback: T): T {
   if (!STORE_KEYS.includes(key)) throw new Error(`not an allowed storage key: ${String(key)}`);
+  if (WARD) return fallback;
   try {
     const raw = localStorage.getItem(PREFIX + key);
     return raw ? (JSON.parse(raw) as T) : fallback;
@@ -19,6 +26,7 @@ export function load<T>(key: StoreKey, fallback: T): T {
 
 export function save<T>(key: StoreKey, value: T): boolean {
   if (!STORE_KEYS.includes(key)) throw new Error(`not an allowed storage key: ${String(key)}`);
+  if (WARD) return false;
   try {
     localStorage.setItem(PREFIX + key, JSON.stringify(value));
     return true;

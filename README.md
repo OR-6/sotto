@@ -34,6 +34,7 @@ Every call site is listed in [docs/WHERE-AI-LOGIC-IS-USED.md](docs/WHERE-AI-LOGI
 
 - **Desktop Chrome with the on-device model** (Gemini Nano through the Prompt API): Private mode, Say and Ask live, on-device speech where Chrome offers it.
 - **Any other browser:** Say with quick phrases, Hold on and typed speech still works with nothing sent; **Replay** shows real on-device sessions with their timings; **Cloud live mode** is there if you choose it.
+- **Ward mode** for a shared tablet (add `?ward` to the address): Private mode only, no cloud step offered, nothing read from or written to storage.
 - Hosted URL: being set up.
 
 ## Run it
