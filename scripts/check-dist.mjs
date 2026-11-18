@@ -16,6 +16,7 @@ const forbidden = [
   { name: 'UUID-shaped token (App Check debug token format)', re: /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i },
   { name: 'VITE_APPCHECK_DEBUG_TOKEN reference', re: /VITE_APPCHECK_DEBUG_TOKEN/ },
   { name: 'private key', re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
+  { name: 'the dev-only fake model', re: /fake on-device model/ },
 ];
 const debugToken = process.env.VITE_APPCHECK_DEBUG_TOKEN;
 let failed = false;

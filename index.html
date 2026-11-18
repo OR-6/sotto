@@ -2,17 +2,23 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Sotto: the quiet voice beside you</title>
-    <meta name="description" content="Live help in any conversation, on your device. For the person who is the weaker party in the room." />
+    <meta name="description" content="Live help in any conversation, on your device. For the person who is the weaker party in the room; never for cheating or recording anyone." />
+    <meta name="theme-color" content="#0f1419" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <style>body{background:#0f1419;color:#f3efe7;margin:0}@media (prefers-color-scheme:light){body{background:#f6f2ea;color:#0f1419}}</style>
   </head>
   <body>
-    <main id="app">
-      <h1>Sotto</h1>
-      <p>Live help in any conversation, on your device.</p>
-      <p>For the person who is the weaker party in the room. Never for cheating or recording anyone.</p>
-      <p>Nothing you hear is sent anywhere in Private mode.</p>
-    </main>
+    <div id="app">
+      <main style="max-width:760px;margin:0 auto;padding:56px 20px;font:21px/1.45 system-ui,sans-serif">
+        <h1 style="font-size:56px;margin:0">Sotto</h1>
+        <p>Live help in any conversation, on your device.</p>
+        <p>For the person who is the weaker party in the room. Never for cheating or recording anyone.</p>
+        <p>In Private mode nothing you hear is sent anywhere.</p>
+        <noscript><p>Sotto needs JavaScript to run on your device.</p></noscript>
+      </main>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

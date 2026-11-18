@@ -19,10 +19,11 @@
     "check:attribution": "node scripts/check-attribution.mjs",
     "docs:ai": "node scripts/where-ai-logic.mjs",
     "score": "node scripts/score-bench.mjs",
-    "capture": "node scripts/capture.mjs",
+    "capture": "node scripts/e2e.mjs",
     "e2e": "node scripts/e2e.mjs"
   },
   "dependencies": {
+    "@fontsource/atkinson-hyperlegible": "5.3.0",
     "firebase": "13.4.0"
   },
   "devDependencies": {
@@ -30,7 +31,7 @@
     "axe-core": "4.14.1",
     "fast-check": "4.10.3",
     "jsdom": "31.0.1",
-    "playwright": "1.65.1",
+    "playwright": "1.65.0",
     "typescript": "7.0.2",
     "vite": "8.3.8",
     "vitest": "5.1.1"

@@ -35,6 +35,11 @@ export function recognitionCtor(env: object = globalThis): RecognitionCtor | und
   return e.SpeechRecognition ?? e.webkitSpeechRecognition;
 }
 
+/** Resolves with `fallback` if `p` has not settled within `ms` (some browsers never answer). */
+export function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([p, new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))]);
+}
+
 /** True when the recogniser has a real processLocally property (not just an expando). */
 export function supportsLocal(C: RecognitionCtor): boolean {
   const proto = (C as unknown as { prototype?: object }).prototype;
@@ -46,7 +51,7 @@ export async function readSpeechState(lang = 'en-US', env: object = globalThis):
   const C = recognitionCtor(env);
   if (!C || typeof C.available !== 'function' || !supportsLocal(C)) return 'missing';
   try {
-    const a = await C.available({ langs: [lang], processLocally: true });
+    const a = await withTimeout(C.available({ langs: [lang], processLocally: true }), 2500, 'unavailable');
     return a === 'available' || a === 'downloadable' || a === 'downloading' ? a : 'unavailable';
   } catch {
     return 'unavailable';

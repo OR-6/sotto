@@ -18,7 +18,7 @@ const RULES = [
   // No other AI SDKs or endpoints: app code may import only firebase/* and local modules,
   // and may not contain absolute URLs other than reserved example domains and localhost.
   { re: /\bfrom\s+['"](?!\.|firebase\/)[^'"]+['"]|\brequire\(\s*['"](?!\.)/, why: 'third-party import in app code (only firebase/* allowed)', only: [] },
-  { re: /\bhttps?:\/\/(?!(?:[\w-]+\.)*example\.(?:com|org|net)\b|localhost\b)[A-Za-z0-9]/, why: 'absolute URL in app code', only: [] },
+  { re: /\bhttps?:\/\/(?!(?:[\w-]+\.)*example\.(?:com|org|net)\b|localhost\b|github\.com\/OR-6\/sotto\b)[A-Za-z0-9]/, why: 'absolute URL in app code', only: [] },
   { re: /generativelanguage\.googleapis|aiplatform\.googleapis|firebasevertexai\.googleapis/, why: 'model endpoint referenced directly', only: ['src/ai/egress-guard.ts'] },
   { re: /\bgetGenerativeModel\s*\(/, why: 'model created outside models.ts / cloud.ts', only: ['src/ai/models.ts', 'src/ai/cloud.ts'] },
   { re: /InferenceMode\s*\.\s*(PREFER_IN_CLOUD|ONLY_IN_CLOUD|PREFER_ON_DEVICE)\b/, why: 'cloud-capable mode outside cloud.ts (I2)', only: ['src/ai/cloud.ts'] },

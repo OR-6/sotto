@@ -91,6 +91,8 @@ export function createDeviceOnlyModel(ai: AI, spec: DeviceModelSpec, env: object
       withSignal(signal);
       const t0 = performance.now();
       const { stream, response } = await model.generateContentStream(prompt);
+      // If we stop early (superseded or post-check), the aggregate promise rejects unobserved.
+      response.catch(() => undefined);
       let text = '';
       let firstMs = 0;
       for await (const chunk of stream) {

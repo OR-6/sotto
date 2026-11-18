@@ -10,3 +10,6 @@ dist/
 shots/*/
 test-results/
 playwright-report/
+
+# Screens are rebuilt by npm run capture
+shots/

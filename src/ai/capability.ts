@@ -47,7 +47,10 @@ export const EN_TEXT_ONLY = {
 export async function readDeviceState(env: object = globalThis): Promise<DeviceState> {
   if (!deviceRuntimePresent(env)) return 'missing';
   try {
-    const a = await (env as { LanguageModel: LanguageModelLike }).LanguageModel.availability(EN_TEXT_ONLY);
+    const a = await Promise.race([
+      (env as { LanguageModel: LanguageModelLike }).LanguageModel.availability(EN_TEXT_ONLY),
+      new Promise<string>((resolve) => setTimeout(() => resolve('unavailable'), 4000)),
+    ]);
     return a === 'available' || a === 'downloadable' || a === 'downloading' ? a : 'unavailable';
   } catch {
     return 'unavailable';
