@@ -10,6 +10,7 @@ import { listen, type Listener } from '../speech/recognise';
 import { speak, stopSpeaking } from '../speech/speak';
 import { announce, formatBytes, h, setText } from './dom';
 import { state, saveSettings } from './state';
+import { createScanner } from './scan';
 
 export type SessionDeps = {
   live: Live;
@@ -94,6 +95,7 @@ export function renderSession(deps: SessionDeps): SessionView {
   const listenLabel = h('span', {}, 'Not listening');
   const listenBtn = h('button', { class: 'btn small', id: 'listen' }, 'Listen');
   const receiptBtn = h('button', { class: 'btn small', id: 'open-receipt' }, 'Receipt');
+  const scanBtn = h('button', { class: 'btn small', id: 'scan-toggle', 'aria-pressed': 'false', title: 'Switch scanning: or hold Space for one second' }, 'Scan');
   const endBtn = h('button', { class: 'btn small', id: 'end' }, 'End');
   const where = h('span', { class: `where${state.cloudLive ? ' cloud' : ''}`, id: 'where' }, state.cloudLive ? 'Cloud live mode' : 'Private mode');
   where.title = state.cloudLive ? 'Live lines may be sent to the cloud this session' : 'Live help runs on this device; nothing said here is sent';
@@ -109,6 +111,7 @@ export function renderSession(deps: SessionDeps): SessionView {
     h('span', { class: 'spacer' }),
     state.speech === 'available' ? h('span', { class: 'listen-state', role: 'status' }, pulse, listenLabel) : null,
     state.speech === 'available' ? listenBtn : null,
+    scanBtn,
     receiptBtn,
     endBtn,
   );
@@ -431,6 +434,25 @@ export function renderSession(deps: SessionDeps): SessionView {
   };
   document.addEventListener('keydown', onKey);
 
+  const scanner = createScanner({
+    rateMs: state.settings.scanRateMs,
+    items: () => [
+      ...(state.mode === 'say' ? optionBtns : [sayQuestion, repeatBtn]),
+      holdBtn,
+      ...Array.from(quick.querySelectorAll<HTMLElement>('button')).filter((b) => b !== holdBtn),
+      flipBtn,
+      endBtn,
+    ],
+    announce: (label) => announce(label),
+    onChange: (on) => {
+      scanBtn.setAttribute('aria-pressed', String(on));
+      setText(scanBtn, on ? 'Scanning' : 'Scan');
+      if (on !== state.settings.scan) saveSettings({ scan: on });
+    },
+  });
+  scanBtn.addEventListener('click', () => scanner.toggle());
+  if (state.settings.scan) scanner.start();
+
   setMode(state.mode);
   renderStrip();
   refreshReceipt();
@@ -446,6 +468,7 @@ export function renderSession(deps: SessionDeps): SessionView {
       stopListening();
       stopSpeaking();
       document.removeEventListener('keydown', onKey);
+      scanner.dispose();
     },
   };
 }

@@ -239,6 +239,7 @@ button { cursor: pointer; }
   font-weight: 700;
   transition: border-color var(--fade) var(--ease), background var(--fade) var(--ease), opacity var(--fade) var(--ease);
 }
+.scan { outline: 4px solid var(--amber) !important; outline-offset: 3px; background-color: var(--amber-soft) !important; }
 .option:hover, .option:focus-visible, .option.scan { border-color: var(--amber); background: var(--amber-soft); }
 .option .key { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--rim-strong); display: grid; place-items: center; font-size: 16px; color: var(--muted); font-weight: 700; }
 .option .kind { display: block; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 400; margin-bottom: 4px; }

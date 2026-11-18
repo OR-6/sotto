@@ -21,6 +21,9 @@ export type Settings = {
   flipPartner: boolean;
   /** "I am the one who cannot speak": everything heard is the other person. */
   allHeardIsPartner: boolean;
+  /** Switch scanning: on at session start, and the step time. */
+  scan: boolean;
+  scanRateMs: number;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -33,6 +36,8 @@ export const DEFAULT_SETTINGS: Settings = {
   rate: 1,
   flipPartner: false,
   allHeardIsPartner: true,
+  scan: false,
+  scanRateMs: 1200,
 };
 
 export const state = {
