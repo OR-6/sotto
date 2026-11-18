@@ -142,3 +142,22 @@ function collectSchemaStrings(s: object): string[] {
   walk(s);
   return out;
 }
+
+/**
+ * Cloud live mode's backend: the same live prompts in PREFER_ON_DEVICE, so the device runs them
+ * when it has the model and the cloud otherwise. It refuses every call unless the user switched
+ * Cloud live mode on for this session (the red banner is visible while it is on).
+ */
+export function createCloudLiveBackend(ai: AI, model: string, receipt: Receipt, prompts: { saySystem: string; saySchema: object; askSystem: string; askSchema: object }) {
+  const sessionApproval: Approver = async () => cloudState.liveSession;
+  const call = (step: 'say' | 'ask', system: string, schema: object) => async (prompt: string, onText: (s: string) => void, signal: AbortSignal) => {
+    const r = await cloudCall(ai, { step: `${step} (cloud live)`, mode: 'PREFER_ON_DEVICE', model, system, user: prompt, schema, device: { system, schema }, signal }, sessionApproval, receipt);
+    onText(r.text);
+    return { text: r.text, ms: r.ms, source: r.source };
+  };
+  return {
+    mode: 'PREFER_ON_DEVICE',
+    say: call('say', prompts.saySystem, prompts.saySchema),
+    ask: call('ask', prompts.askSystem, prompts.askSchema),
+  };
+}

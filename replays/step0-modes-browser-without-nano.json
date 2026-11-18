@@ -1,0 +1,82 @@
+{
+  "browser": {
+    "date": "2026-11-18T22:12:05.040Z",
+    "chromeMajor": "156",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Claude/6.6395.0 Chrome/156.0.8078.100 Safari/537.36",
+    "platform": "macOS",
+    "cores": 10,
+    "memoryGB": 16,
+    "appCheck": "debug-token",
+    "configMissing": []
+  },
+  "rows": [
+    {
+      "label": "ONLY_ON_DEVICE",
+      "error": "AI: Local LanguageModel API not available in this environment. (AI/api-not-enabled)"
+    },
+    {
+      "label": "PREFER_ON_DEVICE",
+      "error": "The cloud refused this browser (App Check). Reload the page and try again."
+    },
+    {
+      "label": "PREFER_IN_CLOUD",
+      "error": "The cloud refused this browser (App Check). Reload the page and try again."
+    },
+    {
+      "label": "ONLY_IN_CLOUD",
+      "error": "The cloud refused this browser (App Check). Reload the page and try again."
+    },
+    {
+      "label": "ONLY_IN_CLOUD + Say schema (synthetic line)",
+      "error": "The cloud refused this browser (App Check). Reload the page and try again."
+    }
+  ],
+  "receipt": {
+    "kind": "sotto-receipt",
+    "version": 1,
+    "bytesOut": 0,
+    "steps": [
+      {
+        "n": 1,
+        "at": "2026-11-18T22:12:04.195Z",
+        "step": "hello",
+        "mode": "PREFER_ON_DEVICE",
+        "where": "failed",
+        "ms": 201,
+        "bytesOut": 0,
+        "note": "AI: Error fetching from https://firebasevertexai.googleapis.com/v1beta/projects/veil-123/models/gemini-3.5-flash-lite:ge"
+      },
+      {
+        "n": 2,
+        "at": "2026-11-18T22:12:04.540Z",
+        "step": "hello",
+        "mode": "PREFER_IN_CLOUD",
+        "where": "failed",
+        "ms": 345,
+        "bytesOut": 0,
+        "note": "AI: Error fetching from https://firebasevertexai.googleapis.com/v1beta/projects/veil-123/models/gemini-3.5-flash-lite:ge"
+      },
+      {
+        "n": 3,
+        "at": "2026-11-18T22:12:04.825Z",
+        "step": "hello",
+        "mode": "ONLY_IN_CLOUD",
+        "where": "failed",
+        "ms": 284,
+        "bytesOut": 0,
+        "note": "AI: Error fetching from https://firebasevertexai.googleapis.com/v1beta/projects/veil-123/models/gemini-3.5-flash-lite:ge"
+      },
+      {
+        "n": 4,
+        "at": "2026-11-18T22:12:05.039Z",
+        "step": "hello",
+        "mode": "ONLY_IN_CLOUD",
+        "where": "failed",
+        "ms": 212,
+        "bytesOut": 0,
+        "note": "AI: Error fetching from https://firebasevertexai.googleapis.com/v1beta/projects/veil-123/models/gemini-3.5-flash-lite:ge"
+      }
+    ]
+  },
+  "guard": []
+}

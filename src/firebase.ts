@@ -38,12 +38,12 @@ if (import.meta.env.DEV && isLocalhost) {
 }
 
 const siteKey: string | undefined = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
-export const appCheckState: 'recaptcha-enterprise' | 'debug-only' | 'missing-site-key' | 'no-config' = configMissing.length
+export const appCheckState: 'recaptcha-enterprise' | 'debug-token' | 'missing-site-key' | 'no-config' = configMissing.length
   ? 'no-config'
-  : siteKey
-    ? 'recaptcha-enterprise'
-    : import.meta.env.DEV && isLocalhost
-      ? 'debug-only'
+  : import.meta.env.DEV && isLocalhost
+    ? 'debug-token'
+    : siteKey
+      ? 'recaptcha-enterprise'
       : 'missing-site-key';
 
 if (configMissing.length === 0) {

@@ -1,0 +1,199 @@
+// The live loop: partner turn in → cancel the stale call → compose → stream → filter → emit.
+// The engine never decides where a call runs: it is handed a `LiveBackend`. In Private mode
+// that backend is built only from device-only models (models.ts); Cloud live mode's backend
+// comes from cloud.ts and exists only after the user's explicit per-session switch.
+// Receipts: the engine records device steps; cloud.ts records every cloud-capable call itself.
+import { composeAsk, composeSay } from '../core/compose';
+import type { ContextInput, Tone } from '../core/context';
+import { filterAsk, filterSay, parseJson } from '../core/filter';
+import type { AskResult } from '../core/prompts/ask';
+import type { SayOption } from '../core/prompts/say';
+import type { Receipt } from '../core/receipt';
+import { partialAsk, partialSayTexts } from '../core/stream';
+import { cleanLine, lastPartner, type Speaker, type Turn } from '../core/turns';
+
+export type LiveMode = 'say' | 'ask';
+
+/** One streamed call. `onText` gets the text so far; resolves with the full text and where it ran. */
+export type StreamFn = (prompt: string, onText: (soFar: string) => void, signal: AbortSignal) => Promise<{ text: string; ms: number; source: string }>;
+
+export type LiveBackend = {
+  /** 'ONLY_ON_DEVICE' in Private mode, 'PREFER_ON_DEVICE' in Cloud live mode. Shown in the receipt. */
+  readonly mode: string;
+  say: StreamFn;
+  ask: StreamFn;
+};
+
+export type Chips = { situation: string; partner: string; tone: Tone; joke: boolean; brief: string; voice: string };
+
+export type LiveEvent =
+  | { type: 'turn'; turn: Turn }
+  | { type: 'thinking'; mode: LiveMode; forTurn: number }
+  | { type: 'say-partial'; texts: string[]; forTurn: number }
+  | { type: 'say'; options: SayOption[]; forTurn: number; ms: number; source: string; padded: number }
+  | { type: 'ask-partial'; means?: string; ask?: string; forTurn: number }
+  | { type: 'ask'; result: AskResult; forTurn: number; ms: number; source: string }
+  | { type: 'error'; mode: LiveMode; message: string; forTurn: number };
+
+export type LiveOptions = {
+  backend: LiveBackend;
+  receipt: Receipt;
+  budgetChars: number;
+  now?: () => number;
+};
+
+export type Live = {
+  readonly turns: readonly Turn[];
+  mode: LiveMode;
+  chips: Chips;
+  /** A finished partner utterance (spoken or typed). Starts a call for the current mode. */
+  partner(text: string, via?: Turn['via']): Turn | undefined;
+  /** Something the user said (a tapped option, a quick phrase, typed text). No call is made. */
+  user(text: string, via?: Turn['via']): Turn | undefined;
+  /** Re-runs Say for the last partner turn with a steer word or two. */
+  steer(words: string): void;
+  /** Re-runs the current mode for the last partner turn. */
+  refresh(): void;
+  cancel(): void;
+  on(fn: (e: LiveEvent) => void): () => void;
+  clear(): void;
+  setBackend(b: LiveBackend): void;
+};
+
+const isAbort = (e: unknown) => (e as { name?: string })?.name === 'AbortError' || /abort|superseded/i.test(String((e as Error)?.message ?? ''));
+
+export function createLive(opts: LiveOptions): Live {
+  const now = opts.now ?? (() => Date.now());
+  let backend = opts.backend;
+  let turns: Turn[] = [];
+  let id = 0;
+  let inflight: AbortController | null = null;
+  let steerWords = '';
+  const listeners = new Set<(e: LiveEvent) => void>();
+  const emit = (e: LiveEvent) => listeners.forEach((fn) => fn(e));
+
+  const live: Live = {
+    get turns() {
+      return turns;
+    },
+    mode: 'say',
+    chips: { situation: '', partner: '', tone: 'neutral', joke: false, brief: '', voice: '' },
+    partner(text, via = 'typed') {
+      const t = add('P', text, via);
+      if (t) {
+        steerWords = '';
+        run();
+      }
+      return t;
+    },
+    user(text, via = 'tap') {
+      return add('Y', text, via);
+    },
+    steer(words) {
+      steerWords = cleanLine(words).slice(0, 60);
+      if (live.mode === 'say') run();
+    },
+    refresh() {
+      run();
+    },
+    cancel() {
+      inflight?.abort();
+      inflight = null;
+    },
+    on(fn) {
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    },
+    clear() {
+      live.cancel();
+      turns = [];
+      steerWords = '';
+    },
+    setBackend(b) {
+      live.cancel();
+      backend = b;
+    },
+  };
+
+  function add(who: Speaker, text: string, via: Turn['via']): Turn | undefined {
+    const clean = cleanLine(text);
+    if (!clean) return undefined;
+    const t: Turn = { id: ++id, who, text: clean.slice(0, 1200), at: now(), via };
+    turns = [...turns, t];
+    emit({ type: 'turn', turn: t });
+    return t;
+  }
+
+  function context(): ContextInput {
+    return { ...live.chips, turns, budgetChars: opts.budgetChars };
+  }
+
+  function run(): void {
+    const last = lastPartner(turns);
+    if (!last) return;
+    inflight?.abort(); // one call in flight per session: the newest turn wins
+    const ac = new AbortController();
+    inflight = ac;
+    const mode = live.mode;
+    const forTurn = last.id;
+    const b = backend;
+    emit({ type: 'thinking', mode, forTurn });
+    const current = () => inflight === ac && !ac.signal.aborted;
+
+    if (mode === 'say') {
+      const prompt = composeSay(context(), steerWords);
+      let shown = 0;
+      b.say(
+        prompt,
+        (soFar) => {
+          if (!current()) return;
+          const texts = partialSayTexts(soFar);
+          if (texts.length > shown) {
+            shown = texts.length;
+            emit({ type: 'say-partial', texts, forTurn });
+          }
+        },
+        ac.signal,
+      ).then(
+        (r) => {
+          if (b.mode === 'ONLY_ON_DEVICE') opts.receipt.recordDevice({ step: steerWords ? 'say (steered)' : 'say', mode: b.mode, ms: r.ms });
+          if (!current()) return;
+          const f = filterSay(parseJson(r.text), last.text);
+          inflight = null;
+          emit({ type: 'say', options: f.options, forTurn, ms: r.ms, source: r.source, padded: f.padded });
+        },
+        (e) => fail(e, mode, forTurn, ac),
+      );
+    } else {
+      const prompt = composeAsk(context());
+      b.ask(
+        prompt,
+        (soFar) => {
+          if (!current()) return;
+          const p = partialAsk(soFar);
+          if (p.means || p.ask) emit({ type: 'ask-partial', ...p, forTurn });
+        },
+        ac.signal,
+      ).then(
+        (r) => {
+          if (b.mode === 'ONLY_ON_DEVICE') opts.receipt.recordDevice({ step: 'ask', mode: b.mode, ms: r.ms });
+          if (!current()) return;
+          inflight = null;
+          const f = filterAsk(parseJson(r.text), last.text, live.chips.brief);
+          if (f.result) emit({ type: 'ask', result: f.result, forTurn, ms: r.ms, source: r.source });
+          else emit({ type: 'error', mode, message: 'No clear answer for that line. Ask them to say it another way.', forTurn });
+        },
+        (e) => fail(e, mode, forTurn, ac),
+      );
+    }
+  }
+
+  function fail(e: unknown, mode: LiveMode, forTurn: number, ac: AbortController) {
+    if (isAbort(e) || inflight !== ac) return; // superseded: say nothing
+    inflight = null;
+    if (backend.mode === 'ONLY_ON_DEVICE') opts.receipt.recordDevice({ step: mode, mode: backend.mode, ms: 0, where: 'failed', note: String((e as Error)?.name ?? 'Error') });
+    emit({ type: 'error', mode, message: String((e as Error)?.message ?? e), forTurn });
+  }
+
+  return live;
+}
