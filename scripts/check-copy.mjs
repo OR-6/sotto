@@ -13,8 +13,7 @@ for (const f of files) {
     // The README states the rule itself on lines that say "never claims"; allow those.
     if (f === 'README.md' && /never (says|claims)/i.test(l)) continue;
     if (BANNED.test(l)) problems.push(`${f}:${n} banned claim: ${l.trim().slice(0, 120)}`);
-    // The mode's one-word pill label 'Private' is allowed; its accessible name says "Private mode".
-    if (PRIVATE.test(l.replace(/'Private'/g, '')) && !/Private mode/.test(l) && !/\bprivate\s*:/.test(l) && !/^\s*(import|export|\/\/|\*)/.test(l)) problems.push(`${f}:${n} "private" without "Private mode": ${l.trim().slice(0, 120)}`);
+    if (PRIVATE.test(l) && !/Private mode/.test(l) && !/\bprivate\s*:/.test(l) && !/^\s*(import|export|\/\/|\*)/.test(l)) problems.push(`${f}:${n} "private" without "Private mode": ${l.trim().slice(0, 120)}`);
   }
 }
 // Text fields: browser cloud assists off. Raw <input>/<textarea> in pages must say spellcheck="false".

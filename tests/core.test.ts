@@ -230,7 +230,7 @@ describe('stats', () => {
     const s = computeStats([
       { askedAt: 0, answeredAt: 2000, text: 'An iced latte please', via: 'option' },
       { askedAt: 10_000, answeredAt: 11_000, text: 'Yes', via: 'quick' },
-      { askedAt: 20_000, answeredAt: 20_100, text: "One moment, I'm typing", via: 'hold' },
+      { askedAt: 20_000, answeredAt: 20_100, text: 'Hold on, please.', via: 'hold' },
     ]);
     expect(s.answers).toBe(2);
     expect(s.words).toBe(5);

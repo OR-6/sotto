@@ -28,7 +28,7 @@ export type SessionDeps = {
 };
 
 const KIND_LABEL: Record<SayOption['kind'], string> = { answer: 'Answer', alternative: 'Another way', question: 'Ask back' };
-const HOLD_LINE = "One moment, I'm typing.";
+const HOLD_LINE = 'Hold on, please.';
 
 export type SessionView = { el: HTMLElement; dispose(): void; refreshReceipt(): void };
 
@@ -120,13 +120,13 @@ export function renderSession(deps: SessionDeps): SessionView {
   const askBtn = modeBtn('ask', 'Ask');
   const pulse = h('span', { class: 'pulse', 'aria-hidden': 'true' });
   const listenLabel = h('span', {}, 'Not listening');
-  const listenBtn = h('button', { class: 'btn small desktop-only', id: 'listen' }, 'Listen');
-  const listenMenuBtn = h('button', { class: 'btn small phone-only', id: 'listen-menu' }, 'Listen');
+  const listenBtn = h('button', { class: 'btn small wide-only', id: 'listen' }, 'Listen');
+  const listenMenuBtn = h('button', { class: 'btn small compact-only', id: 'listen-menu' }, 'Listen');
   listenMenuBtn.addEventListener('click', () => listenBtn.click());
   const receiptBtn = h('button', { class: 'btn small', id: 'open-receipt' }, 'Receipt');
   const scanBtn = h('button', { class: 'btn small', id: 'scan-toggle', 'aria-pressed': 'false', title: 'Switch scanning: or hold Space for one second' }, 'Scan');
-  const endBtn = h('button', { class: 'btn small desktop-only', id: 'end' }, 'End');
-  const endMenuBtn = h('button', { class: 'btn small phone-only', id: 'end-menu' }, 'End the conversation');
+  const endBtn = h('button', { class: 'btn small wide-only', id: 'end' }, 'End');
+  const endMenuBtn = h('button', { class: 'btn small compact-only', id: 'end-menu' }, 'End the conversation');
   const earBtn = h('button', { class: 'btn small', id: 'earpiece', 'aria-pressed': String(state.settings.earpiece), title: 'Ask mode: Means and Ask are read to you. Use earphones.' }, state.settings.earpiece ? 'Reading to me: on' : 'Read Ask to me');
   earBtn.addEventListener('click', () => {
     saveSettings({ earpiece: !state.settings.earpiece });
@@ -142,7 +142,7 @@ export function renderSession(deps: SessionDeps): SessionView {
   }));
   // The privacy pill is the receipt button: where live help runs and what has been sent, one tap away.
   receiptBtn.className = `where-pill${state.cloudLive ? ' cloud' : ''}`;
-  receiptBtn.title = state.cloudLive ? 'Live lines may be sent to the cloud this session. Open the receipt.' : 'Live help runs on this device. Open the receipt.';
+  receiptBtn.title = state.cloudLive ? 'Every line said here is sent to Google this session. Open the receipt.' : 'Live help runs on this device. Open the receipt.';
   const situation = state.situationText || packById(state.pack)?.label || 'Conversation';
   const more = h(
     'details',
@@ -159,6 +159,9 @@ export function renderSession(deps: SessionDeps): SessionView {
       endMenuBtn,
     ),
   );
+  more.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('.more-menu button')) more.open = false;
+  });
   const topbar = h(
     'header',
     { class: 'topbar' },
@@ -166,7 +169,7 @@ export function renderSession(deps: SessionDeps): SessionView {
     h('span', { class: 'mode-switch', role: 'group', 'aria-label': 'Mode' }, sayBtn, askBtn),
     receiptBtn,
     h('span', { class: 'spacer' }),
-    state.speech === 'available' ? h('span', { class: 'listen-state desktop-only', role: 'status' }, pulse, listenLabel) : null,
+    state.speech === 'available' ? h('span', { class: 'listen-state wide-only', role: 'status' }, pulse, listenLabel) : null,
     state.speech === 'available' ? listenBtn : null,
     turnTop,
     more,
@@ -196,7 +199,7 @@ export function renderSession(deps: SessionDeps): SessionView {
   // ---------- Say ----------
   const optionsEl = h('div', { class: 'options', id: 'options', role: 'group', 'aria-label': 'Things to say' });
   const optionBtns = [0, 1, 2].map((i) => {
-    const b = h('button', { class: 'option skeleton', 'data-i': String(i), id: `option-${i + 1}`, disabled: true }, h('span', { class: 'key', 'aria-hidden': 'true' }, String(i + 1)), h('span', { class: 'kind' }), h('span', { class: 'text' }));
+    const b = h('button', { class: 'option skeleton', 'data-i': String(i), id: `option-${i + 1}`, disabled: true, 'aria-label': 'Waiting for their line' }, h('span', { class: 'key', 'aria-hidden': 'true' }, String(i + 1)), h('span', { class: 'kind' }), h('span', { class: 'text' }));
     b.addEventListener('click', () => {
       const t = b.querySelector('.text')!.textContent ?? '';
       if (t) say(t, 'option');
@@ -233,7 +236,10 @@ export function renderSession(deps: SessionDeps): SessionView {
   }
   let fillers: boolean[] = [];
   function paintOptions(texts: string[], kinds: (SayOption['kind'] | '')[], final: boolean, keepRest = false) {
-    if (final || !keepRest) optionsEl.classList.remove('stale');
+    if (final || !keepRest) {
+      optionsEl.classList.remove('stale');
+      setText(updating, '');
+    }
     optionBtns.forEach((b, i) => {
       if (keepRest && !texts[i]) return; // streaming: later slots keep the previous turn's option until replaced
       const t = texts[i] ?? '';
@@ -257,15 +263,19 @@ export function renderSession(deps: SessionDeps): SessionView {
   }
   /** A new line is being answered: the old options stay, dimmed and still usable, until new ones arrive. */
   function skeleton() {
-    if (optionBtns.some((b) => !b.classList.contains('skeleton'))) optionsEl.classList.add('stale');
-    else paintOptions([], [], false);
+    if (optionBtns.some((b) => !b.classList.contains('skeleton'))) {
+      optionsEl.classList.add('stale');
+      setText(updating, 'New suggestions coming. These still work.');
+    } else paintOptions([], [], false);
   }
 
   const steerInput = h('input', { class: 'text-input', id: 'steer', placeholder: 'One word to steer, or a sentence to speak', maxlength: 200, autocomplete: 'off', 'aria-label': 'One or two words to steer the suggestions, or a sentence to speak' });
   const steerGo = h('button', { class: 'btn small', id: 'steer-go' }, 'Steer');
   const sendTyped = h('button', { class: 'btn small', id: 'say-typed', title: 'Say exactly what I typed' }, 'Speak');
   const completions = h('div', { class: 'row completions', id: 'completions', role: 'group', 'aria-label': 'Ways to finish what you typed' });
-  const steer = h('div', { class: 'steer' }, h('div', { class: 'row' }, steerInput, steerGo, sendTyped), completions);
+  const steerHint = h('p', { class: 'muted steer-hint', id: 'steer-hint' }, 'Enter: one or two words change the suggestions; a longer line is spoken.');
+  steerInput.setAttribute('aria-describedby', 'steer-hint');
+  const steer = h('div', { class: 'steer' }, h('div', { class: 'row' }, steerInput, steerGo, sendTyped), steerHint, completions);
   steerGo.addEventListener('click', () => doSteer());
   sendTyped.addEventListener('click', () => {
     const t = steerInput.value.trim();
@@ -312,7 +322,7 @@ export function renderSession(deps: SessionDeps): SessionView {
     }, 250);
   });
 
-  const holdBtn = h('button', { class: 'btn hold-btn', id: 'hold', title: 'Says: One moment, I\'m typing. (H)' }, 'Hold on');
+  const holdBtn = h('button', { class: 'btn hold-btn', id: 'hold', title: 'Says: Hold on, please. (H)' }, 'Hold on');
   holdBtn.addEventListener('click', hold);
   const quick = h('div', { class: 'quick', id: 'quick', role: 'group', 'aria-label': 'Quick phrases' }, ...deps.phrases.filter((p) => !/hold on/i.test(p)).map((p) => h('button', { class: 'chip', onclick: () => say(p, 'quick') }, p)));
   const thumbbar = h('footer', { class: 'thumbbar' }, quick, holdBtn);
@@ -320,6 +330,7 @@ export function renderSession(deps: SessionDeps): SessionView {
   const errorLine = h('p', { class: 'note-line', id: 'live-note', role: 'status' });
   /** Measured, per suggestion: from the end of their line to the suggestions, and where they ran. */
   const timing = h('p', { class: 'timing tabular', id: 'timing' });
+  const updating = h('p', { class: 'updating', id: 'updating', 'aria-live': 'off' });
   const emptySay = h(
     'p',
     { class: 'empty-say', id: 'empty-say' },
@@ -335,7 +346,7 @@ export function renderSession(deps: SessionDeps): SessionView {
   const OPENERS = ['Hello!', 'Excuse me, can I say something?', 'I have a question.', 'I use this to talk. Please give me a moment.'];
   const openers = h('div', { class: 'row openers', id: 'openers', role: 'group', 'aria-label': 'Start the conversation' }, OPENERS.map((o) => h('button', { class: 'chip', onclick: () => say(o, 'quick') }, o)));
   emptySay.append(openers);
-  const sayPanel = h('section', { id: 'say-panel', 'aria-label': 'Say' }, emptySay, optionsEl, timing, steer);
+  const sayPanel = h('section', { id: 'say-panel', 'aria-label': 'Say' }, emptySay, updating, optionsEl, timing, steer);
 
   // ---------- Ask ----------
   const askLast = h('p', { class: 'ask-last', id: 'ask-last' });
@@ -431,7 +442,7 @@ export function renderSession(deps: SessionDeps): SessionView {
     state.answers.push({ askedAt: askedAt || Date.now(), answeredAt: Date.now(), text: HOLD_LINE, via: 'hold' });
     partnerSaid.classList.remove('empty');
     setText(partnerSaid, HOLD_LINE);
-    setText(partnerTyping, 'Please wait: a reply is coming.');
+    setText(partnerTyping, 'A reply is coming.');
     speakOut(HOLD_LINE);
   }
   /** Speaks a line. Listening pauses while Sotto speaks, so it never transcribes its own voice. */
@@ -459,9 +470,11 @@ export function renderSession(deps: SessionDeps): SessionView {
           onError: (code) => setText(errorLine, code === 'not-allowed' ? 'The microphone is blocked for this page. The other person can type instead.' : `Listening stopped (${code}). Press Listen to try again.`),
           onState: (on) => {
             listeningNow = on;
+            receiptBtn.classList.toggle('listening', on);
+            refreshReceipt();
             pulse.classList.toggle('on', on);
             setText(listenMenuBtn, on ? 'Stop listening' : 'Listen');
-            setText(listenLabel, on ? 'Listening on this device' : 'Not listening');
+            setText(listenLabel, on ? 'Listening' : 'Not listening');
             setText(listenBtn, on ? 'Stop listening' : 'Listen');
             setNotice();
           },
@@ -490,6 +503,10 @@ export function renderSession(deps: SessionDeps): SessionView {
         if (e.turn.who === 'P') {
           askedAt = e.turn.at;
           setText(partnerTyping, ''); // they spoke again: the "reply is coming" notice is stale
+          if (partnerSaid.textContent === HOLD_LINE) {
+            partnerSaid.classList.add('empty');
+            setText(partnerSaid, 'Sotto will show what I say here.');
+          }
           renderStrip();
           setText(askLast, e.turn.text);
           setText(errorLine, '');
@@ -501,7 +518,8 @@ export function renderSession(deps: SessionDeps): SessionView {
         else showAsk({}, false);
         break;
       case 'say-partial':
-        if (!holdsFocus()) paintOptions(e.texts, [], false, true);
+        // Stream into an empty stack only; a stack being replaced swaps all three at once.
+        if (!holdsFocus() && !optionsEl.classList.contains('stale')) paintOptions(e.texts, [], false, true);
         break;
       case 'say':
         fillers = e.options.map((o) => !!o.filler);
@@ -546,8 +564,13 @@ export function renderSession(deps: SessionDeps): SessionView {
 
   function refreshReceipt() {
     const b = state.receipt.bytesOut;
-    receiptBtn.replaceChildren(state.cloudLive ? 'Cloud live' : 'Private', h('span', { class: 'pill-detail' }, ` · ${b ? `${formatBytes(b)} sent` : 'nothing sent'}`));
-    if (!navigator.onLine) receiptBtn.append(h('span', { class: 'offline-tag' }, ' · offline'));
+    // Desktop: "Private mode · nothing sent". Phone: "On device", short enough for one row.
+    receiptBtn.replaceChildren(
+      h('span', { class: 'pill-full' }, state.cloudLive ? 'Cloud live mode' : 'Private mode'),
+      h('span', { class: 'pill-short' }, state.cloudLive ? 'Cloud live' : listeningNow ? 'Listening' : 'On device'),
+      h('span', { class: 'pill-detail' }, ` · ${b ? `${formatBytes(b)} sent` : 'nothing sent'}`),
+    );
+    if (!navigator.onLine) receiptBtn.append(h('span', { class: 'offline-tag pill-detail' }, ' · offline'));
     receiptBtn.setAttribute('aria-label', `${state.cloudLive ? 'Cloud live mode' : 'Private mode'}, ${b ? `${formatBytes(b)} sent` : 'nothing sent'}. Open the receipt.`);
   }
 

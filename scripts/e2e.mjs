@@ -211,6 +211,14 @@ async function run() {
           const texts = await page.$$eval('.option .text', (els) => els.map((e) => e.textContent));
           check(texts.join('|') === 'A flat white, please|Just a tea for me|What do you recommend?', 'three Say options appear for the partner line');
           await axe(page, `say ${tag}`);
+          for (const w of [1024, 1280]) {
+            await page.setViewportSize({ width: w, height: 800 });
+            await page.waitForTimeout(150);
+            const over = await page.evaluate(() => { const t = document.querySelector('.topbar'); return t.scrollWidth - t.clientWidth; });
+            check(over <= 1, `the top bar fits at ${w} px (${over}px over)`);
+            await shot(page, dir, `06c-say-${w}`);
+          }
+          await page.setViewportSize({ width: size.width, height: size.height });
           // stale-call cancellation: two lines quickly → only the second's options
           await partnerSays(page, 'Hi again');
           await partnerSays(page, 'Oat milk okay?');
@@ -227,7 +235,7 @@ async function run() {
           await page.keyboard.press('1');
           check((await page.textContent('#partner-said')) === 'An iced latte, please', 'key 1 says option 1 on the partner side');
           await page.keyboard.press('h');
-          check((await page.textContent('#partner-said')) === "One moment, I'm typing.", 'H holds the floor');
+          check((await page.textContent('#partner-said')) === 'Hold on, please.', 'H holds the floor');
           // Airplane mode: the network goes away mid-conversation; live help keeps working.
           await ctx.setOffline(true);
           await partnerSays(page, 'Is that for here or to go?');

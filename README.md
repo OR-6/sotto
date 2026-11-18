@@ -1,13 +1,13 @@
 # Sotto
 
-**The quiet voice beside you: live help in any conversation, on your device.**
+**The quiet voice beside you: live help in English conversations, on your device.**
 
 Sotto listens to the people talking to you and, on your own device, gives you the one thing you need right now:
 
 - **Say**, for people who cannot speak, or not fast enough (ALS, cerebral palsy, stroke, laryngectomy, situational mutism, a patient who is intubated): three things to say next, spoken aloud in one tap, with a big **Hold on** button that tells the other person a reply is coming.
 - **Ask**, for anyone out of their depth (at the doctor, the landlord, the municipality, the bank, a school meeting): what the last sentence meant in plain words, the question to ask next, and a flag on deadlines, costs and decisions, kept in a list.
 
-**The stance.** Sotto is for the person who is the weaker party in the room. It is not for cheating in interviews, winning arguments or recording anyone. It shows a visible listening state, records no audio, keeps nothing you did not save, and asks you to tell the other person it is listening.
+**The stance.** Sotto is for the person with less power in the room: the patient, the tenant, the one who cannot speak fast enough. It is not for cheating in interviews, winning arguments or recording anyone. It shows a visible listening state, records no audio, keeps nothing you did not save, and asks you to tell the other person it is listening.
 
 ## Why it is hybrid by nature
 

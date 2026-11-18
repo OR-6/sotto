@@ -101,7 +101,7 @@ export function renderPrepare(root: HTMLElement, nav: Nav, ai: { device: Paramet
       h(
         'div',
         { class: 'outgoing-pane', 'aria-live': 'polite' },
-        h('p', { class: 'outgoing-title' }, 'Exactly this will be sent to the cloud, and nothing else:'),
+        h('p', { class: 'outgoing-title' }, 'Exactly this line is sent to Google, with the instructions below:'),
         outUser,
         h('details', {}, h('summary', {}, 'With these instructions'), outSystem),
       ),

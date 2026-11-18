@@ -59,7 +59,9 @@ export async function openSettings(onClose: () => void): Promise<void> {
     savePhrases([...QUICK_PHRASES]);
     state.brief = null;
     state.useBrief = false;
-    cleared.textContent = 'Cleared: settings, phrases, briefs, saved numbers, and the Firebase identifiers and tokens a cloud step stored.';
+    state.voicePack = null;
+    state.useVoice = false;
+    cleared.textContent = 'Cleared: settings, phrases, briefs, summaries, your voice pack, saved numbers, and what Firebase stored for cloud steps.';
   });
 
   const latencyOut = h('p', { class: 'tabular', id: 'latency-out', role: 'status' });
@@ -111,7 +113,7 @@ export async function openSettings(onClose: () => void): Promise<void> {
         ['large', 'Larger'],
       ]),
       h('h3', {}, 'Switch scanning'),
-      toggle('scan', 'Scan when a conversation starts', 'Space selects. Hold Space for one second to turn scanning on or off. Enter moves on, for two switches.'),
+      toggle('scan', 'Scan when a conversation starts', 'Space selects. Hold Space for one second to start scanning; use the Scan button to stop. With two switches, Enter moves on.'),
       h('label', { class: 'field-label', for: 'set-scan-rate' }, 'Time on each item'),
       h('div', { class: 'row' }, scanRate, scanOut),
       toggle('shortcuts', 'Single-key shortcuts', '1, 2 and 3 say a suggestion, H holds the floor, / jumps to typing. Switch off if keys get pressed by accident.'),
@@ -123,7 +125,7 @@ export async function openSettings(onClose: () => void): Promise<void> {
       h('p', { class: 'muted' }, 'Three Say suggestions for the same line, on this device. Nothing is sent.'),
       latencyRow,
       h('h3', {}, 'On this device'),
-      h('p', { class: 'muted' }, 'Sotto keeps only what you save: settings, phrases, briefs you keep and session numbers. Never what was said, never the receipt.'),
+      h('p', { class: 'muted' }, 'Sotto keeps only what you save: settings, phrases, kept briefs and summaries, your voice pack, and session numbers. It never keeps audio, the conversation or the receipt.'),
       h('div', { class: 'row' }, clearBtn, cleared),
     ),
   );

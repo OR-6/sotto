@@ -80,8 +80,8 @@ describe('conversation screen', () => {
   it('Hold on speaks the hold line and tells the partner a reply is coming', async () => {
     await mount();
     (document.getElementById('hold') as HTMLButtonElement).click();
-    expect(document.getElementById('partner-said')!.textContent).toBe("One moment, I'm typing.");
-    expect(document.getElementById('partner-typing')!.textContent).toMatch(/reply is coming/);
+    expect(document.getElementById('partner-said')!.textContent).toBe('Hold on, please.');
+    expect(document.getElementById('partner-typing')!.textContent).toMatch(/reply is coming/i);
   });
 
   it('leaving the screen does not switch scanning off in the settings', async () => {

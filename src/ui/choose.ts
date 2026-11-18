@@ -97,7 +97,7 @@ export function renderChoose(root: HTMLElement, nav: Nav, begin: () => void): vo
       h('div', { class: 'row', role: 'group', 'aria-labelledby': 'who-label' }, whoChips),
       h('div', { style: 'margin-top:12px' }, whoInput),
       WARD ? null : h('div', { class: 'paths' }, prepareCard, voiceCard),
-      h('div', { class: 'row', style: 'margin-top:28px' }, beginBtn, h('button', { class: 'btn', onclick: () => nav.go('start') }, 'Back')),
+      h('div', { class: 'row sticky-actions' }, beginBtn, h('button', { class: 'btn', onclick: () => nav.go('start') }, 'Back')),
     ),
   );
 }

@@ -52,7 +52,7 @@ export function openReceipt(): void {
       'p',
       { class: 'muted' },
       state.cloudLive
-        ? 'Cloud live mode is on: live lines may be sent. Each one that left is listed below with its size and hash.'
+        ? 'Cloud live mode is on: every line said here is sent to Google. Each one is listed below with its size and hash.'
         : 'In Private mode every live step runs on this device. Cloud steps happen only when you approve the exact text, and are listed here with what was sent.',
     ),
     r.steps.length
@@ -82,7 +82,7 @@ function otherRequests(): HTMLElement {
     { id: 'other-requests' },
     h('summary', {}, `Other requests this page made: ${rows.reduce((n, [, v]) => n + v.count, 0)} (none carry anything said)`),
     rows.length
-      ? h('table', { class: 'receipt' }, h('tbody', {}, rows.map(([host, v]) => h('tr', {}, h('td', {}, host), h('td', {}, PURPOSE[host] ?? 'app infrastructure'), h('td', { class: 'tabular' }, `${v.count} × , ${formatBytes(v.bytes)}`)))))
+      ? h('table', { class: 'receipt' }, h('tbody', {}, rows.map(([host, v]) => h('tr', {}, h('td', {}, host), h('td', {}, PURPOSE[host] ?? 'app infrastructure'), h('td', { class: 'tabular' }, `${v.count} ${v.count === 1 ? 'request' : 'requests'}, ${formatBytes(v.bytes)}`)))))
       : h('p', {}, 'None.'),
   );
 }
@@ -91,8 +91,8 @@ export function confirmCloudLive(deviceCanRun: boolean, onYes: () => void): void
   const yes = h('button', { class: 'btn danger', id: 'cloud-yes' }, 'Turn on for this session');
   const no = h('button', { class: 'btn primary', id: 'cloud-no' }, 'Keep Private mode');
   const d = dialog('cloud-confirm', 'Cloud live mode', [
-    h('p', {}, deviceCanRun ? 'This browser can run the on-device model. Private mode is the better choice here; Cloud live mode is for devices that cannot.' : 'This browser cannot run the on-device model, so live help would have to use the cloud.'),
-    h('p', {}, 'With Cloud live mode on, what is said in this conversation is sent through Firebase AI Logic to Google\'s Gemini Developer API, for this session only. Google\'s terms for that API decide how long it is kept; Sotto keeps nothing. A red banner stays on every screen, including the side the other person sees.'),
+    h('p', {}, deviceCanRun ? 'This browser can make suggestions on its own. Private mode is the better choice here.' : 'This browser cannot make suggestions on its own, so they would have to come from Google.'),
+    h('p', {}, 'With Cloud live mode on, everything said in this conversation is sent to Google\'s Gemini service, for this session only. Google\'s terms decide how long it is kept. A red banner stays on both sides of the screen.'),
     h('p', { class: 'muted' }, 'Tell the other person before you turn it on. Do not use it for health details you would not email. Prepare and the summary never need it.'),
     h('div', { class: 'row' }, no, yes),
   ]);
@@ -116,9 +116,9 @@ export function openStats(onAgain: () => void, onHome: () => void, onSummary?: (
     all.push({ date: new Date().toISOString().slice(0, 10), answers: s.answers, medianMs: s.medianMs, wpm: s.wpm });
     saved.textContent = save('stats', all.slice(-50)) ? 'Saved on this device (numbers only, no words).' : 'This browser would not save it.';
   });
-  const again = h('button', { class: 'btn primary', id: 'again' }, 'New conversation');
+  const again = h('button', { class: 'btn primary', id: 'again' }, 'Clear and start again');
   const summary = onSummary ? h('button', { class: 'btn', id: 'to-summary' }, 'Write a summary') : null;
-  const home = h('button', { class: 'btn small' }, 'Start screen');
+  const home = h('button', { class: 'btn small' }, 'Clear and go home');
   const back = onBack ? h('button', { class: 'btn small', id: 'keep-talking' }, 'Keep talking') : null;
   const stat = (n: string, l: string) => h('div', { class: 'stat' }, h('div', { class: 'n tabular' }, n), h('div', { class: 'l' }, l));
   const d = dialog('stats', 'This conversation', [
@@ -126,10 +126,11 @@ export function openStats(onAgain: () => void, onHome: () => void, onSummary?: (
       ? h('p', { style: 'font-size:22px;margin-top:0' }, `You answered ${s.answers} ${s.answers === 1 ? 'time' : 'times'}. Half your answers came within ${formatMs(s.medianMs)}${enough ? `, about ${s.wpm} words a minute while answering` : ''}.`)
       : h('p', {}, 'No answers this time.'),
     s.answers
-      ? h('div', { class: 'stats-grid' }, stat(String(s.answers), 'answers'), stat(formatMs(s.medianMs), 'median time to answer'), stat(formatMs(p90), '9 in 10 answers within'), enough ? stat(String(s.wpm), 'words a minute while answering') : null, stat(formatBytes(state.receipt.bytesOut), 'sent by Sotto this session'))
+      ? h('div', { class: 'stats-grid' }, stat(String(s.answers), 'answers'), stat(formatMs(s.medianMs), 'median time to answer'), times.length >= 3 ? stat(formatMs(p90), '9 in 10 answers within') : null, enough ? stat(String(s.wpm), 'words a minute while answering') : null, stat(formatBytes(state.receipt.bytesOut), 'sent by Sotto this session'))
       : null,
     enough ? h('p', { class: 'muted' }, 'For comparison: people typing on a communication device usually manage about 8 to 15 words a minute; conversation runs at 120 to 150.') : h('p', { class: 'muted' }, 'Words a minute appear after five answers and twenty seconds of answering.'),
-    h('div', { class: 'row' }, back, again, summary, saveBtn, home),
+    onSummary ? h('p', { class: 'muted' }, 'Ending clears what was said. Write a summary first to keep it.') : null,
+    h('div', { class: 'row' }, back, summary, again, saveBtn, home),
     saved,
   ]);
   again.addEventListener('click', () => (d.close(), onAgain()));

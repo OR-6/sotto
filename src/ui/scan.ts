@@ -1,6 +1,6 @@
 // Switch scanning: one switch (Space, or any switch interface that types a key) steps
 // automatically through the targets; pressing it selects. Two switches: Tab-like advance with
-// one key (Enter) and select with the other (Space). Hold Space for one second to turn it on or off.
+// one key (Enter) and select with the other (Space). Hold Space for one second to turn it on; the Scan button turns it off.
 
 export type Scanner = {
   readonly on: boolean;
