@@ -28,9 +28,34 @@ jobs:
       - name: Production build and bundle scan
         run: npm run build
 
+  e2e:
+    # The built app in Chromium: two worlds (no model, scripted on-device API), axe, 1440/390, light/dark.
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: End to end
+        run: |
+          npx vite preview --port 4173 --strictPort &
+          for i in $(seq 1 30); do curl -sf http://localhost:4173/ >/dev/null && break; sleep 1; done
+          node scripts/e2e.mjs http://localhost:4173 shots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screens
+          path: shots/
+          retention-days: 7
+
   deploy:
     # Deploys main to Firebase Hosting once the FIREBASE_SERVICE_ACCOUNT secret exists.
-    needs: test
+    needs: [test, e2e]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     env:
