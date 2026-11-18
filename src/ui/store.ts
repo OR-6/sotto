@@ -27,11 +27,19 @@ export function save<T>(key: StoreKey, value: T): boolean {
   }
 }
 
-/** Clear everything Sotto saved on this device. */
+/** Databases the Firebase SDKs create once a cloud step has run (identifiers, tokens, config). */
+export const FIREBASE_DATABASES = ['firebase-installations-database', 'firebase_remote_config', 'firebase-app-check-database', 'firebase-heartbeat-database'];
+
+/** Clear everything Sotto and the Firebase SDKs saved on this device. */
 export function clearAll(): void {
   try {
     for (const k of STORE_KEYS) localStorage.removeItem(PREFIX + k);
   } catch {
     /* nothing to clear */
+  }
+  try {
+    for (const db of FIREBASE_DATABASES) indexedDB.deleteDatabase(db);
+  } catch {
+    /* storage blocked */
   }
 }

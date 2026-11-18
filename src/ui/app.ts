@@ -1,5 +1,5 @@
 // The app shell: boot, capability, screens, the Cloud live switch.
-import { readDeviceState } from '../ai/capability';
+import { deviceRuntimeNative, readDeviceState } from '../ai/capability';
 import { createCloudLiveBackend, setCloudLive, cloudState } from '../ai/cloud';
 import { createLive, type Live, type LiveBackend } from '../ai/live';
 import { createPrivateBackend, type PrivateBackend } from '../ai/private-backend';
@@ -144,6 +144,7 @@ function startSession() {
         () => (resetSession(), go('choose')),
         () => (resetSession(), go('start')),
         live && live.turns.length ? () => go('summary') : undefined,
+        () => go('session'), // nothing was cleared: back to the same conversation
       ),
   });
   root.replaceChildren(view.el);
@@ -170,7 +171,8 @@ export async function boot(container: HTMLElement): Promise<void> {
   root = h('div', { id: 'screen' });
   container.replaceChildren(banner, root, h('div', { id: 'announcer', class: 'sr-only', 'aria-live': 'polite' }));
   const [device, speech, voices] = await Promise.all([readDeviceState(), readSpeechState('en-US'), loadVoices()]);
-  state.device = device;
+  // A LanguageModel defined by a page script or extension would receive every live prompt: refuse it.
+  state.device = device !== 'missing' && !deviceRuntimeNative() ? 'unavailable' : device;
   state.speech = speech;
   state.voices = offlineVoices(voices).length;
   replays = await loadReplays();

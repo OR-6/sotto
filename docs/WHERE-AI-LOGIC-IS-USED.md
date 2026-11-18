@@ -19,7 +19,7 @@ Service setup: [src/firebase.ts](../src/firebase.ts) (`initializeApp`, App Check
 
 | Where | What |
 |---|---|
-| [src/ai/capability.ts:51](../src/ai/capability.ts#L51) | `LanguageModel.availability()`: feature detection only, no inference (the one direct Prompt API call) |
+| [src/ai/capability.ts:68](../src/ai/capability.ts#L68) | `LanguageModel.availability()`: feature detection only, no inference (the one direct Prompt API call) |
 | [src/ai/cloud.ts:18](../src/ai/cloud.ts#L18) | inference mode `InferenceMode.PREFER_IN_CLOUD` |
 | [src/ai/cloud.ts:19](../src/ai/cloud.ts#L19) | inference mode `InferenceMode.ONLY_IN_CLOUD` |
 | [src/ai/cloud.ts:20](../src/ai/cloud.ts#L20) | inference mode `InferenceMode.PREFER_ON_DEVICE` |

@@ -59,7 +59,7 @@ export async function openSettings(onClose: () => void): Promise<void> {
     savePhrases([...QUICK_PHRASES]);
     state.brief = null;
     state.useBrief = false;
-    cleared.textContent = 'Cleared: settings, phrases, briefs and saved numbers.';
+    cleared.textContent = 'Cleared: settings, phrases, briefs, saved numbers, and the Firebase identifiers and tokens a cloud step stored.';
   });
 
   const close = h('button', { class: 'btn small', 'data-close': '' }, 'Done');

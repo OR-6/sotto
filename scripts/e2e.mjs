@@ -27,7 +27,7 @@ const check = (cond, what) => {
 // The stand-in for Chrome's Prompt API (test-only). Replies depend on the prompt.
 const FAKE = `(() => {
   const reply = (p) => {
-    const lastP = [...p.matchAll(/P: ([^\\n"]*)/g)].at(-1)?.[1] ?? '';
+    const lastP = (p.split(String.fromCharCode(92) + 'n').filter((l) => /P: /.test(l)).at(-1) || '').replace(/^.*P: /, '');
     if (/Explain the last P line/.test(p)) return JSON.stringify({ means: 'The cartilage in your knee is partly torn; they want to try rest and physio first.', ask: 'How long before we know if physio is working?', flag: { kind: 'decision', quote: 'try conservative management first' } });
     if (/confirming sentence/.test(p)) return JSON.stringify({ line: 'So physio comes first, and surgery only if it does not help?' });
     if (/completions/.test(p)) { const t = (p.match(/I am typing: ([^\\n"]*)/) || [])[1] || ''; return JSON.stringify({ completions: [t + ' please', t + ' for now', t + ' later'] }); }
@@ -38,14 +38,16 @@ const FAKE = `(() => {
   };
   const wait = (ms, s) => new Promise((res, rej) => { const t = setTimeout(res, ms); s && s.addEventListener('abort', () => { clearTimeout(t); rej(new DOMException('aborted', 'AbortError')); }); });
   window.__prompts = 0;
-  window.LanguageModel = {
+  // Presents as a native function (a bound function's toString says [native code]), so the app's
+  // native check passes; this is test-only and is also why that check is a hint, not a proof.
+  window.LanguageModel = Object.assign(Function.prototype.bind.call(function () {}, null), {
     availability: async () => 'available',
     create: async () => ({
       prompt: async (c, o) => { window.__prompts++; await wait(300, o && o.signal); return reply(JSON.stringify(c)); },
       promptStreaming: (c, o) => { window.__prompts++; const full = reply(JSON.stringify(c)); let i = 0; return new ReadableStream({ async pull(ctl) { await wait(i ? 30 : 200, o && o.signal); if (i >= full.length) return ctl.close(); ctl.enqueue(full.slice(i, i + 20)); i += 20; } }); },
       destroy() {},
     }),
-  };
+  });
 })();`;
 
 async function axe(page, label) {

@@ -103,7 +103,7 @@ export function confirmCloudLive(deviceCanRun: boolean, onYes: () => void): void
   no.addEventListener('click', () => d.close());
 }
 
-export function openStats(onAgain: () => void, onHome: () => void, onSummary?: () => void): void {
+export function openStats(onAgain: () => void, onHome: () => void, onSummary?: () => void, onBack?: () => void): void {
   const s = computeStats(state.answers);
   const times = state.answers.filter((a) => a.via !== 'hold').map((a) => a.answeredAt - a.askedAt);
   const p90 = percentile(times, 90);
@@ -119,6 +119,7 @@ export function openStats(onAgain: () => void, onHome: () => void, onSummary?: (
   const again = h('button', { class: 'btn primary', id: 'again' }, 'New conversation');
   const summary = onSummary ? h('button', { class: 'btn', id: 'to-summary' }, 'Write a summary') : null;
   const home = h('button', { class: 'btn small' }, 'Start screen');
+  const back = onBack ? h('button', { class: 'btn small', id: 'keep-talking' }, 'Keep talking') : null;
   const stat = (n: string, l: string) => h('div', { class: 'stat' }, h('div', { class: 'n tabular' }, n), h('div', { class: 'l' }, l));
   const d = dialog('stats', 'This conversation', [
     s.answers
@@ -128,10 +129,11 @@ export function openStats(onAgain: () => void, onHome: () => void, onSummary?: (
       ? h('div', { class: 'stats-grid' }, stat(String(s.answers), 'answers'), stat(formatMs(s.medianMs), 'median time to answer'), stat(formatMs(p90), '9 in 10 answers within'), enough ? stat(String(s.wpm), 'words a minute while answering') : null, stat(formatBytes(state.receipt.bytesOut), 'sent by Sotto this session'))
       : null,
     enough ? h('p', { class: 'muted' }, 'For comparison: people typing on a communication device usually manage about 8 to 15 words a minute; conversation runs at 120 to 150.') : h('p', { class: 'muted' }, 'Words a minute appear after five answers and twenty seconds of answering.'),
-    h('div', { class: 'row' }, again, summary, saveBtn, home),
+    h('div', { class: 'row' }, back, again, summary, saveBtn, home),
     saved,
   ]);
   again.addEventListener('click', () => (d.close(), onAgain()));
   summary?.addEventListener('click', () => (d.close(), onSummary!()));
   home.addEventListener('click', () => (d.close(), onHome()));
+  back?.addEventListener('click', () => (d.close(), onBack!()));
 }

@@ -24,6 +24,23 @@ export function deviceRuntimePresent(env: object = globalThis): boolean {
   return typeof lm?.availability === 'function';
 }
 
+/**
+ * True when `LanguageModel` is the browser's own implementation, not a script's stand-in.
+ * A page script or extension could define a fake global that passes the property check and
+ * receives every live prompt; the app refuses a non-native one. (Tests inject fakes on purpose
+ * and check the property only.) This is a strong hint, not proof: a determined extension can
+ * also fake `toString`. Documented as a limit in the README.
+ */
+export function deviceRuntimeNative(env: object = globalThis): boolean {
+  const lm = (env as { LanguageModel?: unknown }).LanguageModel;
+  if (typeof lm !== 'function') return false;
+  try {
+    return /\{\s*\[native code\]\s*\}\s*$/.test(Function.prototype.toString.call(lm));
+  } catch {
+    return false;
+  }
+}
+
 /** Throws unless the on-device runtime is present. Call before creating any device-only model. */
 export function assertDeviceRuntime(env: object = globalThis): void {
   if (!deviceRuntimePresent(env)) throw new DeviceRuntimeMissingError();

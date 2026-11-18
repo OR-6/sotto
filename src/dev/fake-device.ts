@@ -34,7 +34,7 @@ export function installFakeDevice(delayMs = 700): void {
       const t = setTimeout(resolve, ms);
       signal?.addEventListener('abort', () => (clearTimeout(t), reject(new DOMException('aborted', 'AbortError'))), { once: true });
     });
-  const LanguageModel = {
+  const LanguageModel = Object.assign(Function.prototype.bind.call(function () {}, null), {
     availability: async () => 'available',
     create: async () => ({
       prompt: async (contents: unknown, o?: { signal?: AbortSignal }) => (await wait(delayMs, o?.signal), reply(textOf(contents))),
@@ -52,7 +52,7 @@ export function installFakeDevice(delayMs = 700): void {
       },
       destroy() {},
     }),
-  };
+  });
   Object.defineProperty(window, 'LanguageModel', { value: LanguageModel, configurable: true });
   const badge = document.createElement('div');
   badge.textContent = 'DEV: fake on-device model';

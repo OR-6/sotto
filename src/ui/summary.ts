@@ -83,7 +83,7 @@ export function renderSummary(root: HTMLElement, ai: { device: Parameters<typeof
     status.textContent = where === 'cloud' ? 'Sending the ticked lines above…' : 'Writing the summary on this device…';
     try {
       const shown = summaryOutgoing(lines, state.config.cloudModel);
-      const r = where === 'cloud' ? await summariseInCloud(ai.cloud(), lines, state.config.cloudModel, async (o) => o.user === shown.user && o.system === shown.system, state.receipt) : await summariseOnDevice(ai.device, lines, state.receipt);
+      const r = where === 'cloud' ? await summariseInCloud(ai.cloud(), lines, state.config.cloudModel, async (o) => o.user === out.textContent && o.system === shown.system, state.receipt) : await summariseOnDevice(ai.device, lines, state.receipt);
       status.textContent = '';
       show(r);
     } catch (e) {

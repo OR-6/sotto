@@ -424,3 +424,4 @@ textarea.text-input { padding: 12px 16px; min-height: 140px; resize: vertical; }
 .timing { color: var(--muted); font-size: 15px; margin: -4px 0 12px; min-height: 1.2em; }
 .offline-tag { color: var(--green); }
 .session.offline .where-pill { border-color: var(--green); }
+.openers { margin-top: 14px; }

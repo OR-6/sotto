@@ -72,7 +72,7 @@ export function renderPrepare(root: HTMLElement, nav: Nav, ai: { device: Paramet
     status.textContent = where === 'cloud' ? 'Sending the line above and writing the brief…' : 'Writing a short brief on this device…';
     try {
       // Pressing the button is the approval of exactly the text shown above (I3).
-      const r = where === 'cloud' ? await prepareInCloud(ai.cloud(), line, state.config.cloudModel, async (o) => o.user === prepareOutgoing(line, state.config.cloudModel).user, state.receipt) : await prepareOnDevice(ai.device, line, state.receipt);
+      const r = where === 'cloud' ? await prepareInCloud(ai.cloud(), line, state.config.cloudModel, async (o) => o.user === outUser.textContent && o.system === outSystem.textContent, state.receipt) : await prepareOnDevice(ai.device, line, state.receipt);
       status.textContent = '';
       show(r);
     } catch (e) {

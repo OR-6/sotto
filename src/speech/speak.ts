@@ -2,9 +2,12 @@
 
 export type VoiceLike = { name: string; lang: string; localService: boolean; default?: boolean; voiceURI?: string };
 
+/** Novelty voices (singing, whispering, effects) are not offered as someone's voice. */
+const NOVELTY = /^(Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Deranged|Good News|Hysterical|Jester|Organ|Pipe Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox|Junior|Ralph|Fred|Kathy)\b/i;
+
 export function offlineVoices(voices: readonly VoiceLike[], langPrefix = 'en'): VoiceLike[] {
   return voices
-    .filter((v) => v.localService && v.lang.toLowerCase().startsWith(langPrefix))
+    .filter((v) => v.localService && v.lang.toLowerCase().startsWith(langPrefix) && !NOVELTY.test(v.name))
     .sort((a, b) => Number(Boolean(b.default)) - Number(Boolean(a.default)) || a.name.localeCompare(b.name));
 }
 

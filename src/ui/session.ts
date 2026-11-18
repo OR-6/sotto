@@ -308,6 +308,10 @@ export function renderSession(deps: SessionDeps): SessionView {
     deps.suggestions ? h('br', {}) : null,
     deps.suggestions ? h('span', { class: 'muted' }, 'Hold on and the quick phrases are always at the bottom.') : null,
   );
+  // Openers: the user can start a conversation, not only answer one.
+  const OPENERS = ['Hello!', 'Excuse me, can I say something?', 'I have a question.', 'I use this to talk. Please give me a moment.'];
+  const openers = h('div', { class: 'row openers', id: 'openers', role: 'group', 'aria-label': 'Start the conversation' }, OPENERS.map((o) => h('button', { class: 'chip', onclick: () => say(o, 'quick') }, o)));
+  emptySay.append(openers);
   const sayPanel = h('section', { id: 'say-panel', 'aria-label': 'Say' }, emptySay, optionsEl, timing, steer);
 
   // ---------- Ask ----------
@@ -446,6 +450,7 @@ export function renderSession(deps: SessionDeps): SessionView {
       case 'turn':
         if (e.turn.who === 'P') {
           askedAt = e.turn.at;
+          setText(partnerTyping, ''); // they spoke again: the "reply is coming" notice is stale
           renderStrip();
           setText(askLast, e.turn.text);
           setText(errorLine, '');
