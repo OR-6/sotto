@@ -129,6 +129,10 @@ async function shot(page, dir, name, fullPage = false) {
 }
 
 async function run() {
+  {
+    const html = await (await fetch(BASE + '/')).text();
+    check(/http-equiv="Content-Security-Policy"[^>]*connect-src 'self'/.test(html), 'the built page carries its Content Security Policy');
+  }
   // Full Chromium (headless): the headless shell crashes on SpeechRecognition.available().
   const browser = await chromium.launch({ channel: 'chromium' });
   const sizes = [
