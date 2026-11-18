@@ -27,6 +27,8 @@ export type Settings = {
   scanRateMs: number;
   /** Single-key shortcuts (1, 2, 3, H, /). Can be switched off (WCAG 2.1.4). */
   shortcuts: boolean;
+  /** Ask: read Means and Ask quietly to the user (for earphones). */
+  earpiece: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -42,6 +44,7 @@ export const DEFAULT_SETTINGS: Settings = {
   scan: false,
   scanRateMs: 1200,
   shortcuts: true,
+  earpiece: false,
 };
 
 export const state = {

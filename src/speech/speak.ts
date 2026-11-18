@@ -23,7 +23,7 @@ export function loadVoices(): Promise<SpeechSynthesisVoice[]> {
   });
 }
 
-export type SpeakOptions = { voiceName?: string; rate?: number; onEnd?: () => void };
+export type SpeakOptions = { voiceName?: string; rate?: number; volume?: number; onEnd?: () => void };
 
 /** Speaks `text` with an offline voice. Returns false if no offline voice exists (the partner side still shows it). */
 export function speak(text: string, opts: SpeakOptions = {}): boolean {
@@ -37,6 +37,7 @@ export function speak(text: string, opts: SpeakOptions = {}): boolean {
   u.voice = voice;
   u.lang = voice.lang;
   u.rate = opts.rate ?? 1;
+  if (opts.volume !== undefined) u.volume = opts.volume;
   if (opts.onEnd) {
     // Exactly once, whether speech ends, fails or is cancelled: the microphone must come back.
     let done = false;

@@ -127,6 +127,12 @@ export function renderSession(deps: SessionDeps): SessionView {
   const scanBtn = h('button', { class: 'btn small', id: 'scan-toggle', 'aria-pressed': 'false', title: 'Switch scanning: or hold Space for one second' }, 'Scan');
   const endBtn = h('button', { class: 'btn small desktop-only', id: 'end' }, 'End');
   const endMenuBtn = h('button', { class: 'btn small phone-only', id: 'end-menu' }, 'End the conversation');
+  const earBtn = h('button', { class: 'btn small', id: 'earpiece', 'aria-pressed': String(state.settings.earpiece), title: 'Ask mode: Means and Ask are read to you. Use earphones.' }, state.settings.earpiece ? 'Reading to me: on' : 'Read Ask to me');
+  earBtn.addEventListener('click', () => {
+    saveSettings({ earpiece: !state.settings.earpiece });
+    earBtn.setAttribute('aria-pressed', String(state.settings.earpiece));
+    setText(earBtn, state.settings.earpiece ? 'Reading to me: on' : 'Read Ask to me');
+  });
   endMenuBtn.addEventListener('click', () => endBtn.click());
   const settingsBtn = h('button', { class: 'btn small', id: 'session-settings', 'aria-label': 'Settings' }, 'Settings');
   settingsBtn.addEventListener('click', () => void openSettings(() => {
@@ -147,6 +153,7 @@ export function renderSession(deps: SessionDeps): SessionView {
       { class: 'more-menu' },
       h('p', { class: 'muted' }, `${situation} · with ${live.chips.partner || 'someone'}${state.useBrief && state.brief ? ' · brief on' : ''}`),
       state.speech === 'available' ? listenMenuBtn : null,
+      earBtn,
       scanBtn,
       settingsBtn,
       endMenuBtn,
@@ -379,6 +386,13 @@ export function renderSession(deps: SessionDeps): SessionView {
       }
     } else if (!final) flagEl.hidden = true;
     if (final) announce(r.means ? `Means: ${r.means}` : 'Ready.');
+    // Earpiece mode: read it quietly to the user, never to the partner side.
+    if (final && state.settings.earpiece && (r.means || r.ask)) {
+      const resume = listeningNow;
+      if (resume) stopListening();
+      const ok = speak([r.means && `Means: ${r.means}`, r.ask && `Ask: ${r.ask}`].filter(Boolean).join(' '), { voiceName: state.settings.voiceName, rate: Math.max(1, state.settings.rate), volume: 0.5, onEnd: () => resume && wantListening && !disposed && startListening() });
+      if (!ok && resume) startListening();
+    }
   }
 
   const middle = h('div', { class: 'middle' }, strip, sayPanel, askPanel, errorLine, h('p', { class: 'note-line disclaimer' }, 'Sotto restates and asks. It does not advise.'));
