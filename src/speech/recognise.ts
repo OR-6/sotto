@@ -168,7 +168,15 @@ export function listen(h: ListenHandlers, opts: { lang?: string; phrases?: strin
   return {
     stop() {
       stopped = true;
-      rec?.stop();
+      if (rec) {
+        // Detach first: a late result from this recogniser must never reach the next session.
+        rec.onresult = null;
+        rec.onerror = null;
+        rec.onend = null;
+        rec.abort();
+      }
+      listening = false;
+      h.onState(false);
     },
     get listening() {
       return listening;

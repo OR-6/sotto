@@ -205,7 +205,7 @@ async function run() {
         await page.waitForSelector('#receipt');
         await shot(page, dir, '09-receipt');
         if (full) {
-          check((await page.textContent('#bytes-sent')) === 'Bytes sent this session: 0', 'the receipt shows zero bytes sent in Private mode');
+          check((await page.textContent('#bytes-sent')) === 'Nothing sent this session', 'the receipt shows nothing sent in Private mode');
           await axe(page, `receipt ${tag}`);
         }
         await page.click('#receipt [data-close]');

@@ -321,9 +321,11 @@ export function renderSession(deps: SessionDeps): SessionView {
   repeatBtn.addEventListener('click', async () => {
     if (!deps.helpers) return;
     repeatBtn.disabled = true;
+    const forTurn = lastPartner(live.turns)?.id;
     repeatLine.replaceChildren(h('p', { class: 'muted' }, 'Writing it…'));
     try {
       const raw = await deps.helpers.repeat(composeRepeat({ ...live.chips, turns: live.turns, budgetChars: state.config.maxContextTokens * 3 }), new AbortController().signal);
+      if (lastPartner(live.turns)?.id !== forTurn) return repeatLine.replaceChildren(); // a newer line arrived
       const line = String((parseJson(raw) as { line?: unknown })?.line ?? '').trim();
       repeatLine.replaceChildren(...(line ? [h('p', { class: 'body' }, line), h('button', { class: 'btn primary', onclick: () => say(line, 'option') }, 'Say it')] : [h('p', {}, 'No sentence this time.')]));
     } catch {
@@ -463,8 +465,8 @@ export function renderSession(deps: SessionDeps): SessionView {
         break;
       case 'error':
         if (!deps.suggestions) break; // expected: no model here; the empty state already says so
-        setText(errorLine, `No suggestions for that line (${e.message.slice(0, 80)}). The quick phrases still work.`);
-        if (e.mode === 'say') paintOptions([], [], false);
+        setText(errorLine, 'No suggestions for that line. The quick phrases and typing still work.');
+        optionsEl.classList.remove('stale');
         break;
     }
     refreshReceipt();
@@ -480,7 +482,7 @@ export function renderSession(deps: SessionDeps): SessionView {
     const t = e.target as HTMLElement;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
     if (document.querySelector('dialog[open]')) return;
-    if (e.ctrlKey || e.metaKey || e.altKey || !state.settings.shortcuts) return;
+    if (e.ctrlKey || e.metaKey || e.altKey || e.repeat || e.isComposing || !state.settings.shortcuts) return;
     if (state.mode === 'say' && ['1', '2', '3'].includes(e.key)) {
       const b = optionBtns[Number(e.key) - 1];
       if (!b.disabled) {
@@ -504,7 +506,6 @@ export function renderSession(deps: SessionDeps): SessionView {
       ...(state.mode === 'say' ? optionBtns : [sayQuestion, repeatBtn]),
       ...Array.from(quick.querySelectorAll<HTMLElement>('button')).filter((b) => b !== holdBtn),
       flipBtn,
-      endBtn,
     ],
     announce: (label) => announce(label),
     onChange: (on) => {

@@ -56,6 +56,7 @@ const nav: Nav = {
   askCloudLive() {
     confirmCloudLive(state.device === 'available', async () => {
       await ensureConfig();
+      resetSession(); // turns heard in Private mode never become Cloud live prompts
       state.cloudLive = true;
       setCloudLive(true);
       renderBanner();
@@ -72,6 +73,7 @@ function renderBanner() {
   offBtn.addEventListener('click', () => {
     state.cloudLive = false;
     setCloudLive(false);
+    resetSession(); // Cloud live turns do not carry into Private mode either
     renderBanner();
     if (live && privateBackend) live.setBackend(privateBackend);
     go('start');

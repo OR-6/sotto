@@ -44,7 +44,8 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 export const state = {
-  settings: { ...DEFAULT_SETTINGS, ...load<Partial<Settings>>('settings', {}) },
+  // The partner-consent tick is asked once per visit, never remembered.
+  settings: { ...DEFAULT_SETTINGS, ...load<Partial<Settings>>('settings', {}), consent: false },
   phrases: load<string[]>('phrases', [...QUICK_PHRASES]),
   device: 'missing' as DeviceState,
   speech: 'missing' as SpeechState,

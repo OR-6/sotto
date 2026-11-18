@@ -143,7 +143,23 @@ export const MEANS_MAX_WORDS = 22;
 export const ASK_MAX_WORDS = 17;
 export const QUOTE_MAX_WORDS = 12;
 
-const numbersIn = (s: string) => (s.match(/\d+(?:[.,]\d+)?/g) ?? []).map((n) => n.replace(',', '.'));
+const NUMBER_WORDS: Record<string, number> = { zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90, hundred: 100 };
+/** Numbers written as digits, plus simple number words ("six", "forty five") as digits. */
+const numbersIn = (s: string) => {
+  const digits = (s.match(/\d+(?:[.,]\d+)?/g) ?? []).map((n) => n.replace(',', '.'));
+  const words = s.toLowerCase().match(/[a-z]+/g) ?? [];
+  const fromWords: string[] = [];
+  for (let i = 0; i < words.length; i++) {
+    const w = NUMBER_WORDS[words[i]];
+    if (w === undefined) continue;
+    const next = NUMBER_WORDS[words[i + 1] ?? ''];
+    if (w >= 20 && w < 100 && next !== undefined && next < 10) {
+      fromWords.push(String(w + next));
+      i++;
+    } else fromWords.push(String(w));
+  }
+  return [...digits, ...fromWords];
+};
 
 export type AskFiltered = { result: AskResult | null; notes: string[] };
 
@@ -188,7 +204,7 @@ export function filterAsk(raw: unknown, partnerLine: string, known = ''): AskFil
   }
   if (kind !== 'none') {
     const q = quote.replace(/[.…]+$/, '');
-    if (!q || !norm(partnerLine).includes(norm(q)) || wordCount(q) > QUOTE_MAX_WORDS) {
+    if (!q || wordCount(q) < 2 || !norm(partnerLine).includes(norm(q)) || wordCount(q) > QUOTE_MAX_WORDS) {
       notes.push('flag quote not found in the line, downgraded');
       kind = 'none';
       quote = '';

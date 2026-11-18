@@ -20,8 +20,11 @@ function dialog(id: string, title: string, body: (HTMLElement | null)[], onClose
   return d;
 }
 
+const MODE_LABEL: Record<string, string> = { ONLY_ON_DEVICE: 'Device only', PREFER_ON_DEVICE: 'Device first', PREFER_IN_CLOUD: 'Cloud first', ONLY_IN_CLOUD: 'Cloud only' };
+
 export function openReceipt(): void {
   const r = state.receipt;
+  const hasHash = r.steps.some((s) => s.sha256);
   const rows = r.steps.map((s) =>
     h(
       'tr',
@@ -29,10 +32,10 @@ export function openReceipt(): void {
       h('td', { class: 'tabular' }, String(s.n)),
       h('td', {}, s.step),
       h('td', {}, s.where === 'on_device' ? 'On this device' : s.where === 'in_cloud' ? 'In the cloud' : s.where === 'blocked' ? 'Blocked' : 'Failed'),
-      h('td', { class: 'tabular' }, s.mode),
+      h('td', {}, MODE_LABEL[s.mode] ?? s.mode),
       h('td', { class: 'tabular' }, formatMs(s.ms)),
       h('td', { class: 'tabular' }, formatBytes(s.bytesOut)),
-      h('td', { class: 'hash' }, s.sha256 ? s.sha256.slice(0, 16) + '…' : ''),
+      hasHash ? h('td', { class: 'hash' }, s.sha256 ? s.sha256.slice(0, 16) + '…' : '') : null,
     ),
   );
   const cloudSteps = r.steps.filter((s) => s.outgoing);
@@ -44,7 +47,7 @@ export function openReceipt(): void {
     URL.revokeObjectURL(a.href);
   });
   dialog('receipt', 'Receipt', [
-    h('p', { class: 'big-number tabular', id: 'bytes-sent' }, `Bytes sent this session: ${r.bytesOut}`),
+    h('p', { class: 'big-number tabular', id: 'bytes-sent' }, r.bytesOut ? `Sent this session: ${formatBytes(r.bytesOut)}` : 'Nothing sent this session'),
     h(
       'p',
       { class: 'muted' },
@@ -53,10 +56,11 @@ export function openReceipt(): void {
         : 'In Private mode every live step runs on this device. Cloud steps happen only when you approve the exact text, and are listed here with what was sent.',
     ),
     r.steps.length
-      ? h('table', { class: 'receipt' }, h('thead', {}, h('tr', {}, ...['#', 'Step', 'Where', 'Mode', 'Time', 'Sent', 'SHA-256'].map((x) => h('th', { scope: 'col' }, x)))), h('tbody', {}, rows))
+      ? h('div', { class: 'table-scroll' }, h('table', { class: 'receipt' }, h('thead', {}, h('tr', {}, ...['#', 'Step', 'Where', 'Mode', 'Time', 'Sent', ...(hasHash ? ['SHA-256'] : [])].map((x) => h('th', { scope: 'col' }, x)))), h('tbody', {}, rows)))
       : h('p', {}, 'Nothing has run yet.'),
     ...cloudSteps.map((s) => h('details', {}, h('summary', {}, `What step ${s.n} sent (${formatBytes(s.bytesOut)})`), h('pre', { style: 'white-space:pre-wrap' }, s.outgoing ?? ''))),
     otherRequests(),
+    state.cloudLive ? h('p', { class: 'muted' }, 'In Cloud live mode the receipt holds what was said. A download puts that on this device as a file.') : null,
     h('p', { class: 'muted' }, 'The receipt stays in this tab. It is never uploaded and is gone when you close the page, unless you download it.'),
     h('div', { class: 'row' }, download),
   ]);

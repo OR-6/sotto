@@ -147,6 +147,12 @@ describe('filterAsk', () => {
     expect(f.result?.means).toBe('');
     expect(f.notes).toContain('means invented a number, dropped');
   });
+  it('accepts numbers the line gave as words, rejects one-word flag quotes', () => {
+    const l = 'That means six weeks of physiotherapy, and your rent goes up by forty five euros.';
+    expect(filterAsk({ means: 'Physio for 6 weeks; rent up 45 euros.', ask: 'When?', flag: { kind: 'none', quote: '' } }, l).result?.means).toBe('Physio for 6 weeks; rent up 45 euros.');
+    expect(filterAsk({ means: 'x', ask: 'When?', flag: { kind: 'cost', quote: 'euros' } }, l).result?.flag.kind).toBe('none');
+  });
+
   it('downgrades a flag whose quote is not in the line', () => {
     const f = filterAsk({ means: 'A rent rise.', ask: 'Why?', flag: { kind: 'cost', quote: 'two hundred euros' } }, line);
     expect(f.result?.flag.kind).toBe('none');

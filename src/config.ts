@@ -65,6 +65,20 @@ export async function loadConfig(app: FirebaseApp, timeoutMs = 3000): Promise<Ap
       getValue(rc, 'cloud_enabled').getSource() === 'remote' ? 'remote' : 'default',
     );
   } catch {
+    // Offline or blocked: use the last values this browser activated (a kill switch already
+    // received stays in force), else the compiled-in defaults.
+    try {
+      const rc = getRemoteConfig(app);
+      const src = getValue(rc, 'cloud_enabled').getSource();
+      if (src === 'remote') {
+        return sanitize(
+          { model: getValue(rc, 'cloud_model').asString(), enabled: getValue(rc, 'cloud_enabled').asBoolean(), packs: getValue(rc, 'packs_version').asNumber(), tokens: getValue(rc, 'max_context_tokens_web').asNumber(), latency: getValue(rc, 'latency_target_ms').asNumber() },
+          'remote',
+        );
+      }
+    } catch {
+      /* no cached values */
+    }
     return DEFAULT_CONFIG;
   }
 }
