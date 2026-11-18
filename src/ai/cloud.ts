@@ -8,7 +8,7 @@
 //      nothing else through (egress-guard.ts);
 //   3. records the step in the receipt, with the bytes sent and the SHA-256 (I4).
 import { getGenerativeModel, InferenceMode, InferenceSource, type AI, type SchemaRequest } from 'firebase/ai';
-import { byteLength, type Receipt } from '../core/receipt';
+import type { Receipt } from '../core/receipt';
 import { EN_TEXT_ONLY } from './capability';
 import { egressGuard } from './install-guard';
 
@@ -117,14 +117,19 @@ export async function cloudCall(ai: AI, req: CloudRequest, approve: Approver, re
   const disarm = egressGuard.armCloudPermit({ texts: [req.system, req.user], structural });
   const t0 = performance.now();
   const outText = `${req.system}\n\n${req.user}`;
+  const eventsBefore = egressGuard.events.length;
+  // Bytes are counted where they leave: the egress guard logs every request it let through.
+  const sentBytes = () => egressGuard.events.slice(eventsBefore).filter((e) => e.outcome === 'allowed').reduce((n, e) => n + e.bytes, 0);
   try {
     const result = await model.generateContent(req.user, req.signal ? { signal: req.signal } : undefined);
     const source = result.response.inferenceSource === InferenceSource.ON_DEVICE ? 'on_device' : 'in_cloud';
     const ms = performance.now() - t0;
-    await receipt.recordCloud({ step: req.step, mode: req.mode, ms, where: source, outgoing: outText });
-    return { text: result.response.text(), source, ms, model: req.model, bytesOut: source === 'in_cloud' ? byteLength(outText) : 0 };
+    const bytes = sentBytes();
+    await receipt.recordCloud({ step: req.step, mode: req.mode, ms, where: source, outgoing: outText, bytes });
+    return { text: result.response.text(), source, ms, model: req.model, bytesOut: bytes };
   } catch (e) {
-    await receipt.recordCloud({ step: req.step, mode: req.mode, ms: performance.now() - t0, where: 'failed', outgoing: outText, note: String((e as Error)?.message ?? e).slice(0, 120) });
+    // A failed call may still have sent the text (e.g. the reply never arrived): count what left.
+    await receipt.recordCloud({ step: req.step, mode: req.mode, ms: performance.now() - t0, where: 'failed', outgoing: outText, bytes: sentBytes(), note: String((e as Error)?.message ?? e).slice(0, 120) });
     throw classifyCloudError(e);
   } finally {
     disarm();

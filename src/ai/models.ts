@@ -65,7 +65,7 @@ export function createDeviceOnlyModel(ai: AI, spec: DeviceModelSpec, env: object
   const model = getGenerativeModel(ai, { mode: InferenceMode.ONLY_ON_DEVICE, onDeviceParams });
 
   // The SDK passes `promptOptions` by reference to Chrome's on-device prompt call, so a per-call
-  // signal set here really cancels the on-device call (tests/models.test.ts proves it).
+  // signal set here really cancels the on-device call (tests/device-only.regression.test.ts proves it).
   const withSignal = (signal?: AbortSignal) => {
     if (signal) promptOptions.signal = signal;
     else delete promptOptions.signal;

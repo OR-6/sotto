@@ -5,7 +5,7 @@ export type FlagKind = (typeof FLAG_KINDS)[number];
 export type AskResult = { means: string; ask: string; flag: { kind: FlagKind; quote: string } };
 
 export const ASK_SYSTEM = [
-  'You help a person who is out of their depth in an important conversation (a doctor, a landlord, an official, an interviewer).',
+  'You help a person who is out of their depth in an important conversation (a doctor, a landlord, an official, a bank, a school).',
   'Lines starting "P:" are what the professional said. Lines starting "Y:" are what the person said.',
   'For the last P line write "means": what it means in plain everyday words, at most 20 words, no jargon, no advice.',
   'Write "ask": the single most useful question the person could ask next, at most 15 words, first person, ending with a question mark.',

@@ -46,6 +46,21 @@ describe('cloudCall', () => {
     expect(receipt.steps[0].sha256).toMatch(/^[0-9a-f]{64}$/);
   });
 
+  it('a call that failed after sending still counts its bytes in the receipt', async () => {
+    const { cloudCall, CloudError } = await load();
+    const receipt = createReceipt();
+    net.status = 500;
+    try {
+      await expect(cloudCall(env.ai, req(), async () => true, receipt)).rejects.toBeInstanceOf(CloudError);
+    } finally {
+      net.status = 200;
+    }
+    expect(net.sent).toHaveLength(1);
+    expect(receipt.steps[0]).toMatchObject({ where: 'failed' });
+    expect(receipt.steps[0].bytesOut).toBe(new TextEncoder().encode(net.sent[0].body).length);
+    expect(receipt.steps[0].outgoing).toContain('knee MRI results');
+  });
+
   it('the permit is one-shot: a second request from the same model is blocked at the network', async () => {
     const { cloudCall } = await load();
     const { getGenerativeModel, InferenceMode } = await import('firebase/ai');

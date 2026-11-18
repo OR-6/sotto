@@ -1,5 +1,5 @@
 // Say mode: three things a person who cannot speak could say next.
-// Data only. Exported as JSON for the mobile shells (scripts/export-prompts.mjs).
+// Data only, so the same texts can be shared with a second platform.
 
 export const SAY_KINDS = ['answer', 'alternative', 'question'] as const;
 export type SayKind = (typeof SAY_KINDS)[number];

@@ -26,7 +26,8 @@ export type Receipt = {
   readonly steps: readonly ReceiptStep[];
   readonly bytesOut: number;
   recordDevice(s: { step: string; mode: string; ms: number; where?: Where; note?: string }): ReceiptStep;
-  recordCloud(s: { step: string; mode: string; ms: number; where: Where; outgoing: string; note?: string }): Promise<ReceiptStep>;
+  /** `bytes` is what actually left (counted at the network); defaults to the text's length if it ran in the cloud. */
+  recordCloud(s: { step: string; mode: string; ms: number; where: Where; outgoing: string; bytes?: number; note?: string }): Promise<ReceiptStep>;
   clear(): void;
   toJSON(): object;
 };
@@ -57,14 +58,15 @@ export function createReceipt(now: () => Date = () => new Date()): Receipt {
       // Deliberately takes no text argument: a device step can never carry live text into the receipt.
       return push({ step, mode, where, ms: Math.round(ms), bytesOut: 0, ...(note ? { note } : {}) });
     },
-    async recordCloud({ step, mode, ms, where, outgoing, note }) {
-      const sent = where === 'in_cloud';
+    async recordCloud({ step, mode, ms, where, outgoing, bytes, note }) {
+      const out = bytes ?? (where === 'in_cloud' ? byteLength(outgoing) : 0);
+      const sent = out > 0;
       return push({
         step,
         mode,
         where,
         ms: Math.round(ms),
-        bytesOut: sent ? byteLength(outgoing) : 0,
+        bytesOut: out,
         ...(sent ? { outgoing, sha256: await sha256Hex(outgoing) } : {}),
         ...(note ? { note } : {}),
       });

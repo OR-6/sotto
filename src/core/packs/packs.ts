@@ -67,12 +67,12 @@ export const PACKS: readonly Pack[] = [
     vocab: ['interest rate', 'fee', 'overdraft', 'direct debit', 'contract', 'term', 'monthly payment', 'identification'],
   },
   {
-    id: 'interview',
-    label: 'Job interview',
-    partner: 'the interviewer',
-    mode: 'say',
-    digest: 'A job interview. Answers about experience, strengths and availability. Questions back about the team, the role and the next steps. Sotto helps the person speak; it never answers on their behalf with made-up experience.',
-    vocab: ['experience', 'strengths', 'availability', 'salary', 'notice period', 'team', 'next steps', 'start date'],
+    id: 'school',
+    label: 'School meeting',
+    partner: 'the teacher',
+    mode: 'ask',
+    digest: 'A meeting at school about a child. Watch for concerns raised, support offered, assessments, decisions about the child, and what the parent is asked to do and by when.',
+    vocab: ['assessment', 'support plan', 'progress', 'attendance', 'referral', 'meeting', 'special needs', 'follow-up'],
   },
   {
     id: 'family',

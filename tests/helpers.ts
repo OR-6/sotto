@@ -21,11 +21,13 @@ export function cloudReply(text = 'cloud-reply', stream = false): Response {
 
 export function fakeNetwork(reply = 'cloud-reply') {
   const sent: Sent[] = [];
-  const fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+  const net = { sent, status: 200, fetch: undefined as unknown as typeof globalThis.fetch };
+  net.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     sent.push({ url: String(input), body: typeof init?.body === 'string' ? init.body : '' });
+    if (net.status !== 200) return new Response(JSON.stringify({ error: { code: net.status, message: 'Internal error' } }), { status: net.status, headers: { 'Content-Type': 'application/json' } });
     return cloudReply(reply, String(input).includes('streamGenerateContent'));
   }) as typeof globalThis.fetch;
-  return { sent, fetch };
+  return net;
 }
 
 export type PromptRecord = { contents: unknown; options: { responseConstraint?: object; signal?: AbortSignal } | undefined; createOptions: unknown };

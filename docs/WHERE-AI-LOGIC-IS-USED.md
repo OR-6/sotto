@@ -26,8 +26,8 @@ Service setup: [src/firebase.ts](../src/firebase.ts) (`initializeApp`, App Check
 | [src/ai/cloud.ts:100](../src/ai/cloud.ts#L100) | `getGenerativeModel`: creates a model |
 | [src/ai/cloud.ts:105](../src/ai/cloud.ts#L105) | cloud structured output (`responseSchema`) |
 | [src/ai/cloud.ts:110](../src/ai/cloud.ts#L110) | on-device structured output (`responseConstraint`) |
-| [src/ai/cloud.ts:121](../src/ai/cloud.ts#L121) | `generateContent`: **runs inference** |
-| [src/ai/cloud.ts:122](../src/ai/cloud.ts#L122) | `inferenceSource` read (Receipt / post-check) |
+| [src/ai/cloud.ts:124](../src/ai/cloud.ts#L124) | `generateContent`: **runs inference** |
+| [src/ai/cloud.ts:125](../src/ai/cloud.ts#L125) | `inferenceSource` read (Receipt / post-check) |
 | [src/ai/models.ts:57](../src/ai/models.ts#L57) | on-device structured output (`responseConstraint`) |
 | [src/ai/models.ts:65](../src/ai/models.ts#L65) | `getGenerativeModel`: creates a model |
 | [src/ai/models.ts:65](../src/ai/models.ts#L65) | inference mode `InferenceMode.ONLY_ON_DEVICE` |

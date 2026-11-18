@@ -4,7 +4,7 @@ import { h } from './dom';
 import { state } from './state';
 import type { Nav } from './nav';
 
-const WHO = ['the barista', 'my doctor', 'the pharmacist', 'my landlord', 'the official', 'the bank adviser', 'the interviewer', 'my family', 'a stranger'];
+const WHO = ['the barista', 'my doctor', 'the pharmacist', 'my landlord', 'the official', 'the bank adviser', 'the teacher', 'my family', 'a stranger'];
 
 export function renderChoose(root: HTMLElement, nav: Nav, begin: () => void): void {
   const modeCard = (id: 'say' | 'ask', name: string, forWho: string, what: string) => {

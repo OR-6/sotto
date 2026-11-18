@@ -3,8 +3,10 @@ import { computeStats } from '../core/stats';
 import { formatBytes, formatMs, h } from './dom';
 import { state } from './state';
 import { save, load } from './store';
+import { egressGuard } from '../ai/install-guard';
+import { percentile } from '../core/stats';
 
-function dialog(id: string, title: string, body: HTMLElement[], onClose?: () => void): HTMLDialogElement {
+function dialog(id: string, title: string, body: (HTMLElement | null)[], onClose?: () => void): HTMLDialogElement {
   document.getElementById(id)?.remove();
   const close = h('button', { class: 'btn small', 'data-close': '' }, 'Close');
   const d = h('dialog', { id, 'aria-labelledby': `${id}-title` }, h('div', { class: 'dialog-head' }, h('h2', { id: `${id}-title` }, title), close), h('div', { class: 'dialog-body' }, ...body));
@@ -54,9 +56,31 @@ export function openReceipt(): void {
       ? h('table', { class: 'receipt' }, h('thead', {}, h('tr', {}, ...['#', 'Step', 'Where', 'Mode', 'Time', 'Sent', 'SHA-256'].map((x) => h('th', { scope: 'col' }, x)))), h('tbody', {}, rows))
       : h('p', {}, 'Nothing has run yet.'),
     ...cloudSteps.map((s) => h('details', {}, h('summary', {}, `What step ${s.n} sent (${formatBytes(s.bytesOut)})`), h('pre', { style: 'white-space:pre-wrap' }, s.outgoing ?? ''))),
+    otherRequests(),
     h('p', { class: 'muted' }, 'The receipt stays in this tab. It is never uploaded and is gone when you close the page, unless you download it.'),
     h('div', { class: 'row' }, download),
   ]);
+}
+
+const PURPOSE: Record<string, string> = {
+  'firebaseinstallations.googleapis.com': 'an app instance id, needed by Remote Config',
+  'firebaseremoteconfig.googleapis.com': 'settings: the cloud model name and the cloud on/off switch',
+  'content-firebaseappcheck.googleapis.com': 'App Check: proves this is the real app before any cloud step',
+  'www.google.com': 'reCAPTCHA, used by App Check',
+  'www.gstatic.com': 'reCAPTCHA script, used by App Check',
+};
+
+/** Every other request this page made, so "nothing you hear is sent" can be checked, not trusted. */
+function otherRequests(): HTMLElement {
+  const rows = [...egressGuard.others.entries()];
+  return h(
+    'details',
+    { id: 'other-requests' },
+    h('summary', {}, `Other requests this page made: ${rows.reduce((n, [, v]) => n + v.count, 0)} (none carry anything said)`),
+    rows.length
+      ? h('table', { class: 'receipt' }, h('tbody', {}, rows.map(([host, v]) => h('tr', {}, h('td', {}, host), h('td', {}, PURPOSE[host] ?? 'app infrastructure'), h('td', { class: 'tabular' }, `${v.count} × , ${formatBytes(v.bytes)}`)))))
+      : h('p', {}, 'None.'),
+  );
 }
 
 export function confirmCloudLive(onYes: () => void): void {
@@ -77,6 +101,10 @@ export function confirmCloudLive(onYes: () => void): void {
 
 export function openStats(onAgain: () => void, onHome: () => void): void {
   const s = computeStats(state.answers);
+  const times = state.answers.filter((a) => a.via !== 'hold').map((a) => a.answeredAt - a.askedAt);
+  const p90 = percentile(times, 90);
+  // A words-per-minute figure from a handful of taps is noise; show it only with enough data.
+  const enough = s.answers >= 5 && times.reduce((a, b) => a + b, 0) >= 20_000;
   const saved = h('p', { class: 'muted', role: 'status' });
   const saveBtn = h('button', { class: 'btn small' }, 'Save these numbers');
   saveBtn.addEventListener('click', () => {
@@ -89,10 +117,12 @@ export function openStats(onAgain: () => void, onHome: () => void): void {
   const stat = (n: string, l: string) => h('div', { class: 'stat' }, h('div', { class: 'n tabular' }, n), h('div', { class: 'l' }, l));
   const d = dialog('stats', 'This conversation', [
     s.answers
-      ? h('p', { style: 'font-size:22px;margin-top:0' }, `You answered ${s.answers} ${s.answers === 1 ? 'time' : 'times'}, in ${formatMs(s.medianMs)} on average, about ${s.wpm} words a minute.`)
+      ? h('p', { style: 'font-size:22px;margin-top:0' }, `You answered ${s.answers} ${s.answers === 1 ? 'time' : 'times'}. Half your answers came within ${formatMs(s.medianMs)}${enough ? `, about ${s.wpm} words a minute while answering` : ''}.`)
       : h('p', {}, 'No answers this time.'),
-    h('div', { class: 'stats-grid' }, stat(String(s.answers), 'answers'), stat(formatMs(s.medianMs), 'median time to answer'), stat(String(s.wpm), 'words a minute'), stat(formatBytes(state.receipt.bytesOut), 'sent from this device')),
-    h('p', { class: 'muted' }, 'For comparison: people typing on a communication device usually manage about 8 to 15 words a minute; conversation runs at 120 to 150.'),
+    s.answers
+      ? h('div', { class: 'stats-grid' }, stat(String(s.answers), 'answers'), stat(formatMs(s.medianMs), 'median time to answer'), stat(formatMs(p90), '9 in 10 answers within'), enough ? stat(String(s.wpm), 'words a minute while answering') : null, stat(formatBytes(state.receipt.bytesOut), 'sent by Sotto this session'))
+      : null,
+    enough ? h('p', { class: 'muted' }, 'For comparison: people typing on a communication device usually manage about 8 to 15 words a minute; conversation runs at 120 to 150.') : h('p', { class: 'muted' }, 'Words a minute appear after five answers and twenty seconds of answering.'),
     h('div', { class: 'row' }, again, saveBtn, home),
     saved,
   ]);

@@ -40,7 +40,7 @@ export class EgressBlockedError extends Error {
 
 export type GuardEvent = {
   at: string;
-  outcome: 'allowed' | 'blocked';
+  outcome: 'allowed' | 'blocked' | 'failed';
   reason: string;
   host: string;
   path: string;
@@ -63,6 +63,8 @@ export type EgressGuard = {
   armCloudPermit(spec: PermitSpec): () => void;
   /** In-memory audit trail for the Receipt. No bodies. */
   readonly events: readonly GuardEvent[];
+  /** Every other cross-origin request this page made (host, count, request bytes). No bodies. */
+  readonly others: ReadonlyMap<string, { count: number; bytes: number }>;
 };
 
 type FetchFn = typeof fetch;
@@ -125,6 +127,8 @@ function toUrl(input: RequestInfo | URL): URL {
 export function createEgressGuard(inner: FetchFn, now: () => number = Date.now): { fetch: FetchFn; guard: EgressGuard } {
   let permit: Permit | null = null;
   const events: GuardEvent[] = [];
+  const others = new Map<string, { count: number; bytes: number }>();
+  const sameOrigin = (u: URL) => typeof location !== 'undefined' && u.origin === location.origin;
 
   const log = (outcome: GuardEvent['outcome'], reason: string, url: URL, bytes: number) => {
     events.push({ at: new Date(now()).toISOString(), outcome, reason, host: url.host, path: url.pathname, bytes });
@@ -137,7 +141,14 @@ export function createEgressGuard(inner: FetchFn, now: () => number = Date.now):
     } catch {
       return inner(input, init);
     }
-    if (!isAiHost(url.host)) return inner(input, init);
+    if (!isAiHost(url.host)) {
+      if (!sameOrigin(url)) {
+        const b = typeof init?.body === 'string' ? new TextEncoder().encode(init.body).length : 0;
+        const o = others.get(url.host) ?? { count: 0, bytes: 0 };
+        others.set(url.host, { count: o.count + 1, bytes: o.bytes + b });
+      }
+      return inner(input, init);
+    }
 
     const body = await readBody(input, init);
     const bytes = body == null ? 0 : new TextEncoder().encode(body).length;
@@ -156,8 +167,14 @@ export function createEgressGuard(inner: FetchFn, now: () => number = Date.now):
     if (mismatch) block(mismatch); // the permit stays armed for the real request
 
     permit = null; // one-shot
-    log('allowed', 'matched cloud permit', url, bytes);
-    return inner(input, init);
+    try {
+      const res = await inner(input, init);
+      log('allowed', 'matched cloud permit', url, bytes); // a response came back, so the body was sent
+      return res;
+    } catch (e) {
+      log('failed', 'network error before a response; counted as not sent', url, bytes);
+      throw e;
+    }
   };
 
   const guard: EgressGuard = {
@@ -175,6 +192,9 @@ export function createEgressGuard(inner: FetchFn, now: () => number = Date.now):
     },
     get events() {
       return events;
+    },
+    get others() {
+      return others;
     },
   };
 
