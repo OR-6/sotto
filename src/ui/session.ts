@@ -44,6 +44,11 @@ export function renderSession(deps: SessionDeps): SessionView {
   const partnerNotice = h('p', { class: `partner-notice${state.cloudLive ? ' cloud' : ''}`, id: 'partner-notice' });
   const partnerSaid = h('p', { class: 'partner-said empty', id: 'partner-said', 'aria-live': 'off' }, 'Sotto will show what I say here.');
   const partnerTyping = h('p', { class: 'partner-typing', id: 'partner-typing' });
+  let lastSpoken = '';
+  const againBtn = h('button', { class: 'btn small', id: 'say-again', disabled: true }, 'Say again');
+  const stopBtn = h('button', { class: 'btn small', id: 'stop-speaking', disabled: true }, 'Stop');
+  againBtn.addEventListener('click', () => lastSpoken && speakOut(lastSpoken));
+  stopBtn.addEventListener('click', () => stopSpeaking());
   const partnerInput = h('textarea', { id: 'partner-input', placeholder: 'Type here to talk to me', 'aria-label': 'Type a message to the Sotto user', maxlength: 600 });
   const partnerSend = h('button', { class: 'btn primary', id: 'partner-send' }, 'Send');
   const flipBtn = h('button', { class: 'btn small', id: 'flip', 'aria-pressed': String(state.settings.flipPartner) }, 'Turn to them');
@@ -53,6 +58,7 @@ export function renderSession(deps: SessionDeps): SessionView {
     h('div', { class: 'partner-head' }, h('h2', {}, 'For the other person'), flipBtn),
     partnerNotice,
     partnerSaid,
+    h('div', { class: 'row' }, againBtn, stopBtn),
     partnerTyping,
     h('form', { class: 'partner-form', id: 'partner-form' }, partnerInput, partnerSend),
   );
@@ -289,6 +295,8 @@ export function renderSession(deps: SessionDeps): SessionView {
   const thumbbar = h('footer', { class: 'thumbbar' }, quick, holdBtn);
 
   const errorLine = h('p', { class: 'note-line', id: 'live-note', role: 'status' });
+  /** Measured, per suggestion: from the end of their line to the suggestions, and where they ran. */
+  const timing = h('p', { class: 'timing tabular', id: 'timing' });
   const emptySay = h(
     'p',
     { class: 'empty-say', id: 'empty-say' },
@@ -300,7 +308,7 @@ export function renderSession(deps: SessionDeps): SessionView {
     deps.suggestions ? h('br', {}) : null,
     deps.suggestions ? h('span', { class: 'muted' }, 'Hold on and the quick phrases are always at the bottom.') : null,
   );
-  const sayPanel = h('section', { id: 'say-panel', 'aria-label': 'Say' }, emptySay, optionsEl, steer);
+  const sayPanel = h('section', { id: 'say-panel', 'aria-label': 'Say' }, emptySay, optionsEl, timing, steer);
 
   // ---------- Ask ----------
   const askLast = h('p', { class: 'ask-last', id: 'ask-last' });
@@ -390,6 +398,8 @@ export function renderSession(deps: SessionDeps): SessionView {
   }
   /** Speaks a line. Listening pauses while Sotto speaks, so it never transcribes its own voice. */
   function speakOut(text: string) {
+    lastSpoken = text;
+    againBtn.disabled = stopBtn.disabled = false;
     const resume = listener?.listening;
     if (resume) stopListening();
     const ok = speak(text, { voiceName: state.settings.voiceName, rate: state.settings.rate, onEnd: () => resume && wantListening && !disposed && startListening() });
@@ -451,6 +461,7 @@ export function renderSession(deps: SessionDeps): SessionView {
         break;
       case 'say':
         fillers = e.options.map((o) => !!o.filler);
+        showTiming(e.source);
         showOptions(
           e.options.map((o) => o.text),
           e.options.map((o) => o.kind),
@@ -462,6 +473,7 @@ export function renderSession(deps: SessionDeps): SessionView {
         break;
       case 'ask':
         showAsk(e.result, true);
+        showTiming(e.source);
         break;
       case 'error':
         if (!deps.suggestions) break; // expected: no model here; the empty state already says so
@@ -472,9 +484,26 @@ export function renderSession(deps: SessionDeps): SessionView {
     refreshReceipt();
   });
 
+  function showTiming(source: string) {
+    const ms = askedAt ? Date.now() - askedAt : 0;
+    setText(timing, ms ? `Ready ${(ms / 1000).toFixed(1)} s after their line · ${source === 'in_cloud' ? 'in the cloud' : 'on this device'}` : '');
+    if (state.mode === 'ask') askPanel.append(timing);
+    else optionsEl.after(timing);
+  }
+
+  // Offline is a feature: live help keeps working with the network gone (the airplane-mode test).
+  const onNet = () => {
+    el.classList.toggle('offline', !navigator.onLine);
+    refreshReceipt();
+    if (!navigator.onLine) announce('Offline. Live help keeps working on this device.');
+  };
+  window.addEventListener('online', onNet);
+  window.addEventListener('offline', onNet);
+
   function refreshReceipt() {
     const b = state.receipt.bytesOut;
     receiptBtn.replaceChildren(state.cloudLive ? 'Cloud live' : 'Private', h('span', { class: 'pill-detail' }, ` · ${b ? `${formatBytes(b)} sent` : 'nothing sent'}`));
+    if (!navigator.onLine) receiptBtn.append(h('span', { class: 'offline-tag' }, ' · offline'));
     receiptBtn.setAttribute('aria-label', `${state.cloudLive ? 'Cloud live mode' : 'Private mode'}, ${b ? `${formatBytes(b)} sent` : 'nothing sent'}. Open the receipt.`);
   }
 
@@ -532,6 +561,8 @@ export function renderSession(deps: SessionDeps): SessionView {
       stopListening();
       stopSpeaking();
       document.removeEventListener('keydown', onKey);
+      window.removeEventListener('online', onNet);
+      window.removeEventListener('offline', onNet);
       scanner.dispose();
     },
   };

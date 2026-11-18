@@ -180,6 +180,14 @@ async function run() {
           check((await page.textContent('#partner-said')) === 'An iced latte, please', 'key 1 says option 1 on the partner side');
           await page.keyboard.press('h');
           check((await page.textContent('#partner-said')) === "One moment, I'm typing.", 'H holds the floor');
+          // Airplane mode: the network goes away mid-conversation; live help keeps working.
+          await ctx.setOffline(true);
+          await partnerSays(page, 'Is that for here or to go?');
+          await page.waitForFunction(() => document.querySelectorAll('.option:not(.skeleton):not(:disabled)').length === 3 && !document.querySelector('.options.stale'));
+          check((await page.textContent('#open-receipt')).includes('offline'), 'offline: the pill says offline');
+          check((await page.textContent('#timing')).includes('on this device'), 'offline: suggestions still arrive, measured, on this device');
+          await shot(page, dir, '06b-offline');
+          await ctx.setOffline(false);
           await page.click(await page.isVisible('#turn-top') ? '#turn-top' : '#flip');
           await shot(page, dir, '07-partner-flipped');
           await page.click('#flip');
