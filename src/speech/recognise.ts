@@ -103,6 +103,8 @@ export function listen(h: ListenHandlers, opts: { lang?: string; phrases?: strin
   let lastInterimAt = 0;
   let rec: RecognitionLike | null = null;
   let restarts = 0;
+  let startedAt = 0;
+  let quickFails = 0;
 
   const begin = () => {
     const r = new C();
@@ -138,17 +140,26 @@ export function listen(h: ListenHandlers, opts: { lang?: string; phrases?: strin
     };
     r.onend = () => {
       listening = false;
-      if (!stopped && restarts++ < 500) {
+      if (stopped) return h.onState(false);
+      // Chrome ends continuous sessions on long silences: restart, backing off if it keeps ending at once.
+      quickFails = now() - startedAt < 1000 ? quickFails + 1 : 0;
+      if (quickFails >= 6) {
+        h.onError('restarting-too-often');
+        return h.onState(false);
+      }
+      restarts++;
+      const delay = quickFails ? Math.min(4000, 250 * 2 ** (quickFails - 1)) : 0;
+      setTimeout(() => {
+        if (stopped) return h.onState(false);
         try {
           begin();
-          return;
         } catch {
-          /* fall through */
+          h.onState(false);
         }
-      }
-      h.onState(false);
+      }, delay);
     };
     rec = r;
+    startedAt = now();
     r.start();
     listening = true;
     h.onState(true);

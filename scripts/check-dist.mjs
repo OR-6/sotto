@@ -33,5 +33,14 @@ for (const f of files) {
     failed = true;
   }
 }
+import { existsSync } from 'node:fs';
+if (existsSync('dist/lab')) {
+  console.error('check-dist: dist/lab exists (the lab must never be deployed)');
+  failed = true;
+}
+for (const f of files) if (/__lab/.test(readFileSync(f, 'utf8'))) {
+  console.error(`check-dist: ${f} references the lab save endpoint`);
+  failed = true;
+}
 if (failed) process.exit(1);
 console.log(`check-dist: ${files.length} files clean`);

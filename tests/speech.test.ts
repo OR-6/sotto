@@ -58,14 +58,24 @@ describe('on-device speech wrapper', () => {
     expect(finals).toEqual([['what can I get you', 350]]);
   });
 
-  it('restarts after the browser ends a session, until stopped', () => {
+  it('restarts after the browser ends a session, backs off when it keeps ending, gives up after six', async () => {
     const { C, instances } = fakeRecognition();
-    const l = listen({ onInterim() {}, onFinal() {}, onError() {}, onState() {} }, {}, { SpeechRecognition: C });
+    let t = 0;
+    const errors: string[] = [];
+    const l = listen({ onInterim() {}, onFinal() {}, onError: (c) => errors.push(c), onState() {} }, { now: () => t }, { SpeechRecognition: C });
+    t = 5000; // a long session ended by silence: restart at once
     (instances[0] as unknown as { onend: () => void }).onend();
+    await new Promise((r) => setTimeout(r, 5));
     expect(instances).toHaveLength(2);
+    for (let i = 0; i < 6; i++) {
+      (instances.at(-1) as unknown as { onend: () => void }).onend(); // ends immediately each time
+      await new Promise((r) => setTimeout(r, 4100));
+    }
+    expect(errors).toContain('restarting-too-often');
+    const n = instances.length;
     l.stop();
-    expect(instances).toHaveLength(2);
-  });
+    expect(instances).toHaveLength(n);
+  }, 30_000);
 
   it('lists only offline English voices', () => {
     const v = offlineVoices([

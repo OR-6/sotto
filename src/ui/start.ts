@@ -72,7 +72,7 @@ export function renderStart(root: HTMLElement, nav: Nav): void {
         { class: 'stance' },
         h('li', {}, 'Live help in any conversation, on your device: the words to say if you cannot speak, the meaning and the next question if you are out of your depth.'),
         h('li', {}, 'For the person who is the weaker party in the room. Never for cheating or recording anyone.'),
-        h('li', {}, 'In Private mode nothing you hear is sent anywhere. A receipt shows it.'),
+        h('li', {}, 'In Private mode, nothing said here leaves this device. The receipt lists every request the page makes.'),
       ),
       capabilityLines(),
       h('label', { class: 'consent', for: 'consent' }, consent, h('span', {}, 'I will tell the people I talk to that Sotto is listening on this device. It records nothing.')),

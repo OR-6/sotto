@@ -47,7 +47,7 @@ export function longestSharedRun(a: string, b: string): number {
 /** Strips wrapping quotes, list markers, a leading "Option 1:" and trailing whitespace. */
 export function tidy(text: string): string {
   return text
-    .replace(/^\s*(?:option\s*\d+\s*[:.)-]|\d+\s*[.)-]|[-*•])\s*/i, '')
+    .replace(/^\s*(?:option\s*\d+\s*[:.)-]\s*|\d+[.)]\s+|[-*•]\s+)/i, '')
     .replace(/^["'“”‘’]+|["'“”‘’]+$/g, '')
     .replace(/\s+/g, ' ')
     .trim();
@@ -83,6 +83,19 @@ const PAD: Record<SayKind, readonly string[]> = {
   question: ['Can you say that again?', 'Let me think for a moment'],
 };
 
+/** Why a single Say option would be dropped, or '' if it passes. */
+export function sayOptionWhy(text: string, partnerLine: string): string {
+  const n = wordCount(text);
+  if (!text) return 'empty';
+  if (n < SAY_MIN_WORDS) return 'too short';
+  if (n > SAY_MAX_WORDS) return 'too long';
+  if (DIRECTIVE.test(text)) return 'directive or advice';
+  if (META.test(text)) return 'talks about itself';
+  if (partnerLine && longestSharedRun(text, partnerLine) > 6) return 'repeats the partner';
+  return '';
+}
+export const sayOptionOk = (text: string, partnerLine: string) => sayOptionWhy(tidy(text), partnerLine) === '';
+
 export type SayFiltered = { options: SayOption[]; dropped: { text: string; why: string }[]; padded: number };
 
 /** Validates, tidies and filters Say output. Always returns exactly three options in kind order. */
@@ -95,15 +108,8 @@ export function filterSay(raw: unknown, partnerLine: string): SayFiltered {
       const text = tidy(String((o as { text?: unknown })?.text ?? ''));
       const k = (o as { kind?: unknown })?.kind;
       const kind: SayKind = (SAY_KINDS as readonly unknown[]).includes(k) ? (k as SayKind) : SAY_KINDS[cands.length % 3];
-      const n = wordCount(text);
-      let why = '';
-      if (!text) why = 'empty';
-      else if (n < SAY_MIN_WORDS) why = 'too short';
-      else if (n > SAY_MAX_WORDS) why = 'too long';
-      else if (DIRECTIVE.test(text)) why = 'directive or advice';
-      else if (META.test(text)) why = 'talks about itself';
-      else if (partnerLine && longestSharedRun(text, partnerLine) > 6) why = 'repeats the partner';
-      else if (cands.some((c) => norm(c.text) === norm(text))) why = 'duplicate';
+      let why = sayOptionWhy(text, partnerLine);
+      if (!why && cands.some((c) => norm(c.text) === norm(text))) why = 'duplicate';
       if (why) dropped.push({ text, why });
       else cands.push({ text, kind });
     }
@@ -120,13 +126,14 @@ export function filterSay(raw: unknown, partnerLine: string): SayFiltered {
   for (const kind of SAY_KINDS) {
     if (out.length >= 3) break;
     if (out.some((o) => o.kind === kind)) continue;
-    const text = PAD[kind].find((p) => !out.some((o) => norm(o.text) === norm(p)))!;
+    const text = PAD[kind].find((p) => !out.some((o) => norm(o.text) === norm(p))) ?? PAD[kind][0];
     out.push({ text, kind });
     padded++;
   }
   while (out.length < 3) {
     const kind = SAY_KINDS[out.length];
-    out.push({ text: PAD[kind][1], kind });
+    const text = [...PAD[kind], ...PAD.answer, ...PAD.alternative, ...PAD.question].find((p) => !out.some((o) => norm(o.text) === norm(p))) ?? 'Let me think';
+    out.push({ text, kind });
     padded++;
   }
   return { options: out.slice(0, 3), dropped, padded };

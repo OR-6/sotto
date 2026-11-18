@@ -76,13 +76,17 @@ export function renderSession(deps: SessionDeps): SessionView {
       partnerSide.querySelector('form')!.requestSubmit();
     }
   });
-  flipBtn.addEventListener('click', () => {
-    const on = !partnerSide.classList.contains('flipped');
+  const turnTop = h('button', { class: 'btn small phone-only', id: 'turn-top', 'aria-label': 'Open the other person\'s side' }, 'Them');
+  const setFlip = (on: boolean) => {
     partnerSide.classList.toggle('flipped', on);
+    el.classList.toggle('partner-open', on);
     flipBtn.setAttribute('aria-pressed', String(on));
     flipBtn.textContent = on ? 'Turn back' : 'Turn to them';
     saveSettings({ flipPartner: on });
-  });
+    if (on && window.matchMedia('(max-width: 899px)').matches) flipBtn.focus();
+  };
+  flipBtn.addEventListener('click', () => setFlip(!partnerSide.classList.contains('flipped')));
+  turnTop.addEventListener('click', () => setFlip(true));
 
   // ---------- user side: top bar ----------
   const modeBtn = (m: 'say' | 'ask', label: string) => {
@@ -97,30 +101,43 @@ export function renderSession(deps: SessionDeps): SessionView {
   const listenBtn = h('button', { class: 'btn small', id: 'listen' }, 'Listen');
   const receiptBtn = h('button', { class: 'btn small', id: 'open-receipt' }, 'Receipt');
   const scanBtn = h('button', { class: 'btn small', id: 'scan-toggle', 'aria-pressed': 'false', title: 'Switch scanning: or hold Space for one second' }, 'Scan');
-  const endBtn = h('button', { class: 'btn small', id: 'end' }, 'End');
+  const endBtn = h('button', { class: 'btn small desktop-only', id: 'end' }, 'End');
+  const endMenuBtn = h('button', { class: 'btn small phone-only', id: 'end-menu' }, 'End the conversation');
+  endMenuBtn.addEventListener('click', () => endBtn.click());
   const settingsBtn = h('button', { class: 'btn small', id: 'session-settings', 'aria-label': 'Settings' }, 'Settings');
   settingsBtn.addEventListener('click', () => void openSettings(() => {
     scanner.setRate(state.settings.scanRateMs);
     live.chips.tone = state.settings.tone;
     live.chips.joke = state.settings.joke;
   }));
-  const where = h('span', { class: `where${state.cloudLive ? ' cloud' : ''}`, id: 'where' }, state.cloudLive ? 'Cloud live mode' : 'Private mode');
-  where.title = state.cloudLive ? 'Live lines may be sent to the cloud this session' : 'Live help runs on this device; nothing said here is sent';
+  // The privacy pill is the receipt button: where live help runs and what has been sent, one tap away.
+  receiptBtn.className = `where-pill${state.cloudLive ? ' cloud' : ''}`;
+  receiptBtn.title = state.cloudLive ? 'Live lines may be sent to the cloud this session. Open the receipt.' : 'Live help runs on this device. Open the receipt.';
   const situation = state.situationText || packById(state.pack)?.label || 'Conversation';
+  const more = h(
+    'details',
+    { class: 'more', id: 'more' },
+    h('summary', { class: 'btn small', 'aria-label': 'More' }, 'More'),
+    h(
+      'div',
+      { class: 'more-menu' },
+      h('p', { class: 'muted' }, `${situation} · with ${live.chips.partner || 'someone'}${state.useBrief && state.brief ? ' · brief on' : ''}`),
+      scanBtn,
+      settingsBtn,
+      endMenuBtn,
+    ),
+  );
   const topbar = h(
     'header',
     { class: 'topbar' },
     h('h1', { class: 'brand' }, 'Sotto'),
     h('span', { class: 'mode-switch', role: 'group', 'aria-label': 'Mode' }, sayBtn, askBtn),
-    h('span', { class: 'where situation muted', title: 'Situation' }, situation),
-    where,
-    state.useBrief && state.brief ? h('span', { class: 'where situation', id: 'brief-on', title: 'The brief you prepared shapes the suggestions' }, 'Brief on') : null,
-    h('span', { class: 'spacer' }),
-    state.speech === 'available' ? h('span', { class: 'listen-state', role: 'status' }, pulse, listenLabel) : null,
-    state.speech === 'available' ? listenBtn : null,
-    scanBtn,
-    settingsBtn,
     receiptBtn,
+    h('span', { class: 'spacer' }),
+    state.speech === 'available' ? h('span', { class: 'listen-state desktop-only', role: 'status' }, pulse, listenLabel) : null,
+    state.speech === 'available' ? listenBtn : null,
+    turnTop,
+    more,
     endBtn,
   );
   receiptBtn.addEventListener('click', deps.openReceipt);
@@ -155,14 +172,18 @@ export function renderSession(deps: SessionDeps): SessionView {
     optionsEl.append(b);
     return b;
   });
+  // The stability rule: options do not change under a resting pointer or keyboard/scan focus.
+  // A tap ends the hold (the choice is made), and nothing is held for more than 2.5 s.
   let hovering = false;
   let queued: { texts: string[]; kinds: (SayOption['kind'] | '')[]; final: boolean } | null = null;
-  const holdsFocus = () => hovering || optionsEl.contains(document.activeElement);
-  optionsEl.addEventListener('pointerenter', () => (hovering = true));
+  let queuedTimer = 0;
+  const holdsFocus = () => hovering || !!optionsEl.querySelector(':focus-visible, .scan');
+  optionsEl.addEventListener('pointermove', (e) => (hovering = e.pointerType === 'mouse'));
   optionsEl.addEventListener('pointerleave', () => ((hovering = false), flushQueue()));
   optionsEl.addEventListener('focusout', () => window.setTimeout(flushQueue, 0));
-  function flushQueue() {
-    if (queued && !holdsFocus()) {
+  function flushQueue(force = false) {
+    if (queued && (force || !holdsFocus())) {
+      window.clearTimeout(queuedTimer);
       const q = queued;
       queued = null;
       paintOptions(q.texts, q.kinds, q.final);
@@ -172,6 +193,8 @@ export function renderSession(deps: SessionDeps): SessionView {
   function showOptions(texts: string[], kinds: (SayOption['kind'] | '')[], final: boolean) {
     if (holdsFocus() && optionBtns.some((b) => !b.classList.contains('skeleton'))) {
       queued = { texts, kinds, final };
+      window.clearTimeout(queuedTimer);
+      queuedTimer = window.setTimeout(() => flushQueue(true), 2500);
       return;
     }
     paintOptions(texts, kinds, final);
@@ -185,8 +208,10 @@ export function renderSession(deps: SessionDeps): SessionView {
       setText(b.querySelector('.kind'), t ? KIND_LABEL[(kinds[i] || (['answer', 'alternative', 'question'] as const)[i]) as SayOption['kind']] : '');
       b.classList.toggle('skeleton', !t);
       b.classList.remove('said');
-      b.disabled = !t;
+      b.disabled = !t || !final; // a streamed option is visible at once, tappable once checked
+      b.classList.toggle('pending', !!t && !final);
       b.setAttribute('aria-label', t ? `${i + 1}: ${t}` : 'Thinking');
+      emptySay.hidden = true;
       if (changed && t) {
         b.classList.remove('fresh');
         void b.offsetWidth;
@@ -249,12 +274,14 @@ export function renderSession(deps: SessionDeps): SessionView {
     }, 250);
   });
 
-  const holdBtn = h('button', { class: 'chip hold', id: 'hold' }, 'Hold on');
+  const holdBtn = h('button', { class: 'btn hold-btn', id: 'hold', title: 'Says: One moment, I\'m typing. (H)' }, 'Hold on');
   holdBtn.addEventListener('click', hold);
-  const quick = h('div', { class: 'quick', id: 'quick', role: 'group', 'aria-label': 'Quick phrases' }, holdBtn, ...deps.phrases.filter((p) => !/hold on/i.test(p)).map((p) => h('button', { class: 'chip', onclick: () => say(p, 'quick') }, p)));
+  const quick = h('div', { class: 'quick', id: 'quick', role: 'group', 'aria-label': 'Quick phrases' }, ...deps.phrases.filter((p) => !/hold on/i.test(p)).map((p) => h('button', { class: 'chip', onclick: () => say(p, 'quick') }, p)));
+  const thumbbar = h('footer', { class: 'thumbbar' }, quick, holdBtn);
 
   const errorLine = h('p', { class: 'note-line', id: 'live-note', role: 'status' });
-  const sayPanel = h('section', { id: 'say-panel', 'aria-label': 'Say' }, optionsEl, steer);
+  const emptySay = h('p', { class: 'empty-say', id: 'empty-say' }, state.speech === 'available' ? 'When they speak, three things to say appear here. They can also type on their side.' : 'When they type on their side, three things to say appear here.', h('br', {}), h('span', { class: 'muted' }, 'Hold on and the quick phrases are always at the bottom.'));
+  const sayPanel = h('section', { id: 'say-panel', 'aria-label': 'Say' }, emptySay, optionsEl, steer);
 
   // ---------- Ask ----------
   const askLast = h('p', { class: 'ask-last', id: 'ask-last' });
@@ -263,9 +290,9 @@ export function renderSession(deps: SessionDeps): SessionView {
   const meansCard = h('div', { class: 'ask-card means skeleton' }, h('span', { class: 'label' }, 'Means'), meansBody);
   const askCard = h('div', { class: 'ask-card ask skeleton' }, h('span', { class: 'label' }, 'Ask'), askBody);
   const flagEl = h('div', { class: 'flag', id: 'flag', hidden: true });
-  const sayQuestion = h('button', { class: 'btn small', id: 'say-question', disabled: true }, 'Say this question');
-  const repeatBtn = h('button', { class: 'btn small', id: 'repeat', disabled: true }, 'Repeat it back');
-  const repeatLine = h('p', { class: 'note-line', id: 'repeat-line' });
+  const sayQuestion = h('button', { class: 'btn primary', id: 'say-question', disabled: true }, 'Say this question');
+  const repeatBtn = h('button', { class: 'btn', id: 'repeat', disabled: true }, 'Repeat it back');
+  const repeatLine = h('div', { class: 'repeat-line', id: 'repeat-line', 'aria-live': 'polite' });
   const decisionsList = h('ol', { id: 'decisions-list' });
   const decisionsCount = h('span', {}, 'Decisions and deadlines (0)');
   const decisions = h('details', { class: 'decisions', id: 'decisions' }, h('summary', {}, decisionsCount), decisionsList);
@@ -275,13 +302,13 @@ export function renderSession(deps: SessionDeps): SessionView {
   repeatBtn.addEventListener('click', async () => {
     if (!deps.helpers) return;
     repeatBtn.disabled = true;
-    setText(repeatLine, 'Writing it…');
+    repeatLine.replaceChildren(h('p', { class: 'muted' }, 'Writing it…'));
     try {
       const raw = await deps.helpers.repeat(composeRepeat({ ...live.chips, turns: live.turns, budgetChars: state.config.maxContextTokens * 3 }), new AbortController().signal);
       const line = String((parseJson(raw) as { line?: unknown })?.line ?? '').trim();
-      repeatLine.replaceChildren(...(line ? [line, ' ', h('button', { class: 'btn small', onclick: () => say(line, 'option') }, 'Say it')] : ['No sentence this time.']));
+      repeatLine.replaceChildren(...(line ? [h('p', { class: 'body' }, line), h('button', { class: 'btn primary', onclick: () => say(line, 'option') }, 'Say it')] : [h('p', {}, 'No sentence this time.')]));
     } catch {
-      setText(repeatLine, 'Could not write it this time.');
+      repeatLine.replaceChildren(h('p', {}, 'Could not write it this time.'));
     } finally {
       repeatBtn.disabled = false;
     }
@@ -305,8 +332,9 @@ export function renderSession(deps: SessionDeps): SessionView {
     if (final) announce(r.means ? `Means: ${r.means}` : 'Ready.');
   }
 
-  const userSide = h('section', { class: 'user-side', 'aria-label': 'For me' }, topbar, strip, sayPanel, askPanel, errorLine, h('div', { style: 'flex:1' }), quick, h('p', { class: 'note-line' }, 'Sotto restates and asks. It does not advise.'));
-  const el = h('main', { class: 'session', id: 'main' }, userSide, partnerSide);
+  const middle = h('div', { class: 'middle' }, strip, sayPanel, askPanel, errorLine, h('p', { class: 'note-line disclaimer' }, 'Sotto restates and asks. It does not advise.'));
+  const userSide = h('section', { class: 'user-side', 'aria-label': 'For me' }, topbar, middle, thumbbar);
+  const el = h('main', { class: `session${state.settings.flipPartner ? ' partner-open' : ''}`, id: 'main' }, userSide, partnerSide);
 
   // ---------- behaviour ----------
   function setMode(m: 'say' | 'ask') {
@@ -327,6 +355,8 @@ export function renderSession(deps: SessionDeps): SessionView {
     setText(partnerSaid, text);
     setText(partnerTyping, '');
     optionBtns.forEach((b) => b.classList.toggle('said', b.querySelector('.text')?.textContent === text));
+    hovering = false; // a choice was made: the next options may replace these
+    if (optionsEl.contains(document.activeElement) && !optionsEl.querySelector(':focus-visible')) (document.activeElement as HTMLElement).blur();
     speakOut(text);
   }
   function hold() {
@@ -387,7 +417,7 @@ export function renderSession(deps: SessionDeps): SessionView {
           renderStrip();
           setText(askLast, e.turn.text);
           setText(errorLine, '');
-          setText(repeatLine, '');
+          repeatLine.replaceChildren();
         }
         break;
       case 'thinking':
@@ -419,13 +449,16 @@ export function renderSession(deps: SessionDeps): SessionView {
   });
 
   function refreshReceipt() {
-    setText(receiptBtn, `Receipt · ${formatBytes(state.receipt.bytesOut)} sent`);
+    const b = state.receipt.bytesOut;
+    receiptBtn.replaceChildren(state.cloudLive ? 'Cloud live' : 'Private', h('span', { class: 'pill-detail' }, ` · ${b ? `${formatBytes(b)} sent` : 'nothing sent'}`));
+    receiptBtn.setAttribute('aria-label', `${state.cloudLive ? 'Cloud live mode' : 'Private mode'}, ${b ? `${formatBytes(b)} sent` : 'nothing sent'}. Open the receipt.`);
   }
 
   const onKey = (e: KeyboardEvent) => {
     const t = e.target as HTMLElement;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
     if (document.querySelector('dialog[open]')) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (state.mode === 'say' && ['1', '2', '3'].includes(e.key)) {
       const b = optionBtns[Number(e.key) - 1];
       if (!b.disabled) {
@@ -455,7 +488,7 @@ export function renderSession(deps: SessionDeps): SessionView {
     onChange: (on) => {
       scanBtn.setAttribute('aria-pressed', String(on));
       setText(scanBtn, on ? 'Scanning' : 'Scan');
-      if (on !== state.settings.scan) saveSettings({ scan: on });
+      if (!disposed && on !== state.settings.scan) saveSettings({ scan: on });
     },
   });
   scanBtn.addEventListener('click', () => scanner.toggle());

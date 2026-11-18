@@ -34,7 +34,13 @@ export function speak(text: string, opts: SpeakOptions = {}): boolean {
   u.voice = voice;
   u.lang = voice.lang;
   u.rate = opts.rate ?? 1;
-  if (opts.onEnd) u.onend = opts.onEnd;
+  if (opts.onEnd) {
+    // Exactly once, whether speech ends, fails or is cancelled: the microphone must come back.
+    let done = false;
+    const end = () => (done ? undefined : ((done = true), opts.onEnd!()));
+    u.onend = end;
+    u.onerror = end;
+  }
   speechSynthesis.speak(u);
   return true;
 }

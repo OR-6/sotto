@@ -39,8 +39,8 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
+        // The lab is a dev-server page only; it is never built or deployed.
         main: resolve(root, 'index.html'),
-        lab: resolve(root, 'lab/index.html'),
       },
     },
   },

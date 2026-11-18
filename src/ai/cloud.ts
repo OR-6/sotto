@@ -96,6 +96,7 @@ export async function cloudCall(ai: AI, req: CloudRequest, approve: Approver, re
   const outgoing: Outgoing = { step: req.step, mode: req.mode, model: req.model, system: req.system, user: req.user };
   if (req.mode === 'PREFER_ON_DEVICE' && !cloudState.liveSession) throw new CloudDeclinedError();
   if (!(await approve(outgoing))) throw new CloudDeclinedError();
+  if (req.signal?.aborted) throw new DOMException('The call was superseded.', 'AbortError');
 
   const model = getGenerativeModel(ai, {
     mode: MODES[req.mode],

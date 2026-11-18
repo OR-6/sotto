@@ -5,7 +5,7 @@
 // Receipts: the engine records device steps; cloud.ts records every cloud-capable call itself.
 import { composeAsk, composeSay } from '../core/compose';
 import type { ContextInput, Tone } from '../core/context';
-import { filterAsk, filterSay, parseJson } from '../core/filter';
+import { filterAsk, filterSay, parseJson, sayOptionOk } from '../core/filter';
 import type { AskResult } from '../core/prompts/ask';
 import type { SayOption } from '../core/prompts/say';
 import type { Receipt } from '../core/receipt';
@@ -60,7 +60,6 @@ export type Live = {
   setBackend(b: LiveBackend): void;
 };
 
-const isAbort = (e: unknown) => (e as { name?: string })?.name === 'AbortError' || /abort|superseded/i.test(String((e as Error)?.message ?? ''));
 
 export function createLive(opts: LiveOptions): Live {
   const now = opts.now ?? (() => Date.now());
@@ -147,7 +146,8 @@ export function createLive(opts: LiveOptions): Live {
         prompt,
         (soFar) => {
           if (!current()) return;
-          const texts = partialSayTexts(soFar);
+          // Partials pass the same per-option rules as the final result before they are shown.
+          const texts = partialSayTexts(soFar).filter((t) => sayOptionOk(t, last.text));
           if (texts.length > shown) {
             shown = texts.length;
             emit({ type: 'say-partial', texts, forTurn });
@@ -171,7 +171,10 @@ export function createLive(opts: LiveOptions): Live {
         (soFar) => {
           if (!current()) return;
           const p = partialAsk(soFar);
-          if (p.means || p.ask) emit({ type: 'ask-partial', ...p, forTurn });
+          if (!p.means) return;
+          // A partial Means passes the same rules as the final one (numbers, advice, length).
+          const f = filterAsk({ means: p.means, ask: '', flag: { kind: 'none', quote: '' } }, last.text, live.chips.brief);
+          if (f.result?.means) emit({ type: 'ask-partial', means: f.result.means, forTurn });
         },
         ac.signal,
       ).then(
@@ -189,7 +192,7 @@ export function createLive(opts: LiveOptions): Live {
   }
 
   function fail(e: unknown, mode: LiveMode, forTurn: number, ac: AbortController) {
-    if (isAbort(e) || inflight !== ac) return; // superseded: say nothing
+    if (ac.signal.aborted || inflight !== ac) return; // superseded by a newer call: say nothing
     inflight = null;
     if (backend.mode === 'ONLY_ON_DEVICE') opts.receipt.recordDevice({ step: mode, mode: backend.mode, ms: 0, where: 'failed', note: String((e as Error)?.name ?? 'Error') });
     emit({ type: 'error', mode, message: String((e as Error)?.message ?? e), forTurn });

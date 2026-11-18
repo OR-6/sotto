@@ -125,7 +125,7 @@ function toUrl(input: RequestInfo | URL): URL {
  * Builds the guarded fetch around `inner`. Exported for tests; the app uses `installEgressGuard`.
  */
 export function createEgressGuard(inner: FetchFn, now: () => number = Date.now): { fetch: FetchFn; guard: EgressGuard } {
-  let permit: Permit | null = null;
+  let permits: Permit[] = [];
   const events: GuardEvent[] = [];
   const others = new Map<string, { count: number; bytes: number }>();
   const sameOrigin = (u: URL) => typeof location !== 'undefined' && u.origin === location.origin;
@@ -157,16 +157,15 @@ export function createEgressGuard(inner: FetchFn, now: () => number = Date.now):
       throw new EgressBlockedError(reason);
     };
 
-    if (!permit) block('no cloud permit is armed (device-only text cannot leave)');
-    if (permit!.expires < now()) {
-      permit = null;
-      block('cloud permit expired');
-    }
+    permits = permits.filter((p) => p.expires >= now());
+    if (!permits.length) block('no cloud permit is armed (device-only text cannot leave)');
     if (body == null) block('request body is not a string');
-    const mismatch = checkBodyAgainstPermit(body!, permit!);
-    if (mismatch) block(mismatch); // the permit stays armed for the real request
+    // Each armed permit belongs to one cloud call; the request must match one of them exactly.
+    let mismatch = '';
+    const match = permits.find((p) => !(mismatch = checkBodyAgainstPermit(body!, p) ?? ''));
+    if (!match) block(mismatch); // permits stay armed for the real requests
 
-    permit = null; // one-shot
+    permits = permits.filter((p) => p !== match); // one-shot
     try {
       const res = await inner(input, init);
       log('allowed', 'matched cloud permit', url, bytes); // a response came back, so the body was sent
@@ -179,15 +178,14 @@ export function createEgressGuard(inner: FetchFn, now: () => number = Date.now):
 
   const guard: EgressGuard = {
     armCloudPermit(spec) {
-      if (permit && permit.expires >= now()) throw new Error('A cloud permit is already armed');
       const mine: Permit = {
         texts: new Set(spec.texts),
         structural: new Set(spec.structural ?? []),
         expires: now() + (spec.ttlMs ?? 60_000),
       };
-      permit = mine;
+      permits = [...permits, mine];
       return () => {
-        if (permit === mine) permit = null;
+        permits = permits.filter((p) => p !== mine);
       };
     },
     get events() {

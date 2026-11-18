@@ -12,8 +12,22 @@ export function h<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Attrs = 
     else if (v === true) el.setAttribute(k, '');
     else el.setAttribute(k, String(v));
   }
+  if (tag === 'input' || tag === 'textarea') noCloudAssist(el as HTMLInputElement | HTMLTextAreaElement);
   append(el, children);
   return el;
+}
+
+/**
+ * Browser features that can send typed text to a server (enhanced spell check, writing
+ * suggestions, autofill) are switched off on every text field Sotto creates.
+ */
+export function noCloudAssist(el: HTMLInputElement | HTMLTextAreaElement): void {
+  el.spellcheck = false;
+  el.setAttribute('spellcheck', 'false');
+  el.setAttribute('autocorrect', 'off');
+  el.setAttribute('autocapitalize', 'sentences');
+  el.setAttribute('writingsuggestions', 'false');
+  if (!el.hasAttribute('autocomplete')) el.setAttribute('autocomplete', 'off');
 }
 
 export function append(el: Element, children: (Child | Child[])[]): void {

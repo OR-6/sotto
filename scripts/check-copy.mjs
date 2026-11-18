@@ -13,7 +13,14 @@ for (const f of files) {
     // The README states the rule itself on lines that say "never claims"; allow those.
     if (f === 'README.md' && /never (says|claims)/i.test(l)) continue;
     if (BANNED.test(l)) problems.push(`${f}:${n} banned claim: ${l.trim().slice(0, 120)}`);
-    if (PRIVATE.test(l) && !/Private mode/.test(l) && !/\bprivate\s*:/.test(l) && !/^\s*(import|export|\/\/|\*)/.test(l)) problems.push(`${f}:${n} "private" without "Private mode": ${l.trim().slice(0, 120)}`);
+    // The mode's one-word pill label 'Private' is allowed; its accessible name says "Private mode".
+    if (PRIVATE.test(l.replace(/'Private'/g, '')) && !/Private mode/.test(l) && !/\bprivate\s*:/.test(l) && !/^\s*(import|export|\/\/|\*)/.test(l)) problems.push(`${f}:${n} "private" without "Private mode": ${l.trim().slice(0, 120)}`);
   }
 }
+// Text fields: browser cloud assists off. Raw <input>/<textarea> in pages must say spellcheck="false".
+for (const f of ['index.html'].filter(existsSync)) {
+  if (!/<html[^>]*translate="no"/.test(read(f))) problems.push(`${f}: <html> must carry translate="no"`);
+  for (const { n, l } of lines(read(f))) if (/<(input|textarea)\b/.test(l) && !/spellcheck="false"/.test(l)) problems.push(`${f}:${n} text field without spellcheck="false"`);
+}
+for (const f of walk('src/ui', ['.ts'])) for (const { n, l } of lines(read(f))) if (/createElement\(['"](input|textarea)['"]\)/.test(l)) problems.push(`${f}:${n} create text fields with h() so cloud assists are switched off`);
 report('check:copy', problems, `${files.length} files clean (no banned claims; "private" only with "Private mode")`);

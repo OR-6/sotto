@@ -16,7 +16,7 @@ export class LeakDetectedError extends Error {
   constructor(readonly inferenceSource: string | undefined) {
     super(
       `A device-only step reported inferenceSource=${String(inferenceSource)}, not on_device. ` +
-        'The result was discarded. The egress guard blocks the network, so nothing left the device.',
+        'The result was discarded and live help stopped. Check the receipt for any request that left.',
     );
     this.name = 'LeakDetectedError';
   }
@@ -65,10 +65,20 @@ export function createDeviceOnlyModel(ai: AI, spec: DeviceModelSpec, env: object
   const model = getGenerativeModel(ai, { mode: InferenceMode.ONLY_ON_DEVICE, onDeviceParams });
 
   // The SDK passes `promptOptions` by reference to Chrome's on-device prompt call, so a per-call
-  // signal set here really cancels the on-device call (tests/device-only.regression.test.ts proves it).
-  const withSignal = (signal?: AbortSignal) => {
-    if (signal) promptOptions.signal = signal;
-    else delete promptOptions.signal;
+  // signal set here really cancels that call (tests/device-only.regression.test.ts). Because the
+  // object is shared and the SDK reads it only after creating a session, calls on one model run
+  // one at a time: the next call starts when the previous one has settled (an aborted one settles
+  // at once). This also stops the SDK's session swap from destroying a session still in use.
+  let queue: Promise<unknown> = Promise.resolve();
+  const serial = <T>(signal: AbortSignal | undefined, run: () => Promise<T>): Promise<T> => {
+    const p = queue.catch(() => undefined).then(() => {
+      if (signal?.aborted) throw abortError();
+      if (signal) promptOptions.signal = signal;
+      else delete promptOptions.signal;
+      return run();
+    });
+    queue = p.catch(() => undefined);
+    return p;
   };
   const check = (source: string | undefined) => {
     if (source !== InferenceSource.ON_DEVICE) throw new LeakDetectedError(source);
@@ -77,18 +87,17 @@ export function createDeviceOnlyModel(ai: AI, spec: DeviceModelSpec, env: object
   return {
     async generate(prompt, signal) {
       assertDeviceRuntime(env); // the global could disappear between creation and use
-      if (signal?.aborted) throw abortError();
-      withSignal(signal);
+      return serial(signal, async () => {
       const t0 = performance.now();
       const result: GenerateContentResult = await model.generateContent(prompt);
       check(result.response.inferenceSource);
       const ms = performance.now() - t0;
       return { text: result.response.text(), ms, firstMs: ms, source: String(result.response.inferenceSource) };
+      });
     },
     async stream(prompt, onText, signal) {
       assertDeviceRuntime(env);
-      if (signal?.aborted) throw abortError();
-      withSignal(signal);
+      return serial(signal, async () => {
       const t0 = performance.now();
       const { stream, response } = await model.generateContentStream(prompt);
       // If we stop early (superseded or post-check), the aggregate promise rejects unobserved.
@@ -106,6 +115,7 @@ export function createDeviceOnlyModel(ai: AI, spec: DeviceModelSpec, env: object
       const final = await response;
       check(final.inferenceSource);
       return { text, ms: performance.now() - t0, firstMs: firstMs || performance.now() - t0, source: String(final.inferenceSource) };
+      });
     },
     initialize(onProgress) {
       return model.initializeDeviceModel(onProgress);

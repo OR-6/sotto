@@ -1,7 +1,13 @@
-// Firebase app, App Check and the AI Logic service. Shared by every page.
-import { initializeApp } from 'firebase/app';
+// Firebase for Sotto, split in two so that Private mode loads nothing from the network:
+//
+// - `deviceAI`: the AI Logic service on an app with no App Check, no Remote Config and no
+//   Installations. Device-only models are built on it; they never make a request.
+// - `getCloud()`: created on the first cloud step the user starts (Prepare, Summary, Cloud live
+//   mode). Only then are App Check (reCAPTCHA Enterprise), Installations and Remote Config
+//   started, and only on this second app.
+import { initializeApp, type FirebaseApp } from 'firebase/app';
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
-import { getAI, GoogleAIBackend } from 'firebase/ai';
+import { getAI, GoogleAIBackend, type AI } from 'firebase/ai';
 
 declare global {
   // App Check debug-token hook read by the SDK (localhost only).
@@ -23,20 +29,11 @@ export const configMissing = Object.entries(firebaseConfig)
   .filter(([, v]) => !v)
   .map(([k]) => k);
 
-// Without a config the app still runs on device: the SDK needs these strings to build a model,
-// but an ONLY_ON_DEVICE call never contacts Firebase.
-export const app = initializeApp(
-  configMissing.length ? { apiKey: 'no-config', projectId: 'no-config', appId: '1:0:web:0' } : firebaseConfig,
-);
+// The SDK needs these strings to build a model, but an ONLY_ON_DEVICE call never contacts Firebase.
+const deviceApp = initializeApp(configMissing.length ? { apiKey: 'no-config', projectId: 'no-config', appId: '1:0:web:0' } : firebaseConfig);
+export const deviceAI: AI = getAI(deviceApp, { backend: new GoogleAIBackend() });
 
 const isLocalhost = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
-
-if (import.meta.env.DEV && isLocalhost) {
-  // Dev server only: the production build drops this branch, so a debug token can never ship
-  // (scripts/check-dist.mjs fails the build if one does).
-  self.FIREBASE_APPCHECK_DEBUG_TOKEN = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN || true;
-}
-
 const siteKey: string | undefined = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 export const appCheckState: 'recaptcha-enterprise' | 'debug-token' | 'missing-site-key' | 'no-config' = configMissing.length
   ? 'no-config'
@@ -46,13 +43,28 @@ export const appCheckState: 'recaptcha-enterprise' | 'debug-token' | 'missing-si
       ? 'recaptcha-enterprise'
       : 'missing-site-key';
 
-if (configMissing.length === 0) {
-  initializeAppCheck(app, {
-    // With a debug token set, the SDK uses the debug provider and ignores this key.
-    provider: new ReCaptchaEnterpriseProvider(siteKey || 'debug-only-no-site-key'),
-    isTokenAutoRefreshEnabled: true,
-  });
+let cloud: { app: FirebaseApp; ai: AI } | null = null;
+
+/** The cloud-capable app. Starts App Check on first use; call only from a cloud step the user chose. */
+export function getCloud(): { app: FirebaseApp; ai: AI } {
+  if (cloud) return cloud;
+  const app = initializeApp(configMissing.length ? { apiKey: 'no-config', projectId: 'no-config', appId: '1:0:web:0' } : firebaseConfig, 'sotto-cloud');
+  if (import.meta.env.DEV && isLocalhost) {
+    // Dev server only: the production build drops this branch (scripts/check-dist.mjs checks).
+    self.FIREBASE_APPCHECK_DEBUG_TOKEN = import.meta.env.VITE_APPCHECK_DEBUG_TOKEN || true;
+  }
+  if (!configMissing.length) {
+    initializeAppCheck(app, {
+      // With a debug token set, the SDK uses the debug provider and ignores this key.
+      provider: new ReCaptchaEnterpriseProvider(siteKey || 'debug-only-no-site-key'),
+      isTokenAutoRefreshEnabled: false,
+    });
+  }
+  // getAI reads App Check when it is created, so it must come after initializeAppCheck.
+  // Limited-use tokens give replay protection (Web SDK 12.14.0+).
+  cloud = { app, ai: getAI(app, { backend: new GoogleAIBackend(), useLimitedUseAppCheckTokens: true }) };
+  return cloud;
 }
 
-// Limited-use tokens give replay protection (Web SDK 12.14.0+).
-export const ai = getAI(app, { backend: new GoogleAIBackend(), useLimitedUseAppCheckTokens: true });
+/** True once a cloud step has started (the receipt explains the extra requests from then on). */
+export const cloudStarted = () => cloud !== null;

@@ -83,13 +83,13 @@ function otherRequests(): HTMLElement {
   );
 }
 
-export function confirmCloudLive(onYes: () => void): void {
+export function confirmCloudLive(deviceCanRun: boolean, onYes: () => void): void {
   const yes = h('button', { class: 'btn danger', id: 'cloud-yes' }, 'Turn on for this session');
   const no = h('button', { class: 'btn primary', id: 'cloud-no' }, 'Keep Private mode');
   const d = dialog('cloud-confirm', 'Cloud live mode', [
-    h('p', {}, 'This browser cannot run the on-device model, so live help would have to use the cloud.'),
-    h('p', {}, 'With Cloud live mode on, what is said in this conversation is sent to Google\'s Gemini, for this session only. A red banner stays on every screen, including the side the other person sees.'),
-    h('p', { class: 'muted' }, 'Tell the other person before you turn it on. Prepare and the summary never need it.'),
+    h('p', {}, deviceCanRun ? 'This browser can run the on-device model. Private mode is the better choice here; Cloud live mode is for devices that cannot.' : 'This browser cannot run the on-device model, so live help would have to use the cloud.'),
+    h('p', {}, 'With Cloud live mode on, what is said in this conversation is sent through Firebase AI Logic to Google\'s Gemini Developer API, for this session only. Google\'s terms for that API decide how long it is kept; Sotto keeps nothing. A red banner stays on every screen, including the side the other person sees.'),
+    h('p', { class: 'muted' }, 'Tell the other person before you turn it on. Do not use it for health details you would not email. Prepare and the summary never need it.'),
     h('div', { class: 'row' }, no, yes),
   ]);
   yes.addEventListener('click', () => {

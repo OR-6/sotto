@@ -22,7 +22,7 @@ export function briefCards(b: Brief): HTMLElement {
   );
 }
 
-export function renderPrepare(root: HTMLElement, nav: Nav, ai: Parameters<typeof prepareInCloud>[0]): void {
+export function renderPrepare(root: HTMLElement, nav: Nav, ai: { device: Parameters<typeof prepareInCloud>[0]; cloud: () => Parameters<typeof prepareInCloud>[0] }): void {
   const input = h('input', { class: 'text-input', id: 'prepare-text', maxlength: 160, placeholder: 'knee MRI results, orthopaedist, tomorrow', value: state.situationText, 'aria-label': 'What are you walking into?' });
   const outUser = h('pre', { class: 'outgoing', id: 'outgoing-user' });
   const outSystem = h('pre', { class: 'outgoing small' });
@@ -72,7 +72,7 @@ export function renderPrepare(root: HTMLElement, nav: Nav, ai: Parameters<typeof
     status.textContent = where === 'cloud' ? 'Sending the line above and writing the brief…' : 'Writing a short brief on this device…';
     try {
       // Pressing the button is the approval of exactly the text shown above (I3).
-      const r = where === 'cloud' ? await prepareInCloud(ai, line, state.config.cloudModel, async (o) => o.user === prepareOutgoing(line, state.config.cloudModel).user, state.receipt) : await prepareOnDevice(ai, line, state.receipt);
+      const r = where === 'cloud' ? await prepareInCloud(ai.cloud(), line, state.config.cloudModel, async (o) => o.user === prepareOutgoing(line, state.config.cloudModel).user, state.receipt) : await prepareOnDevice(ai.device, line, state.receipt);
       status.textContent = '';
       show(r);
     } catch (e) {

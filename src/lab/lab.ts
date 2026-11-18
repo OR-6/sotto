@@ -1,7 +1,8 @@
 // Step-zero lab (developer page, removed before submission). Measures what this browser can
 // do with the real SDK and saves the evidence to replays/ through the dev server.
 import { egressGuard } from '../ai/install-guard';
-import { ai, appCheckState, configMissing } from '../firebase';
+import { appCheckState, configMissing, deviceAI, getCloud } from '../firebase';
+const ai = deviceAI;
 import { readDeviceState, type DeviceState } from '../ai/capability';
 import { createDeviceOnlyModel, type DeviceOnlyModel } from '../ai/models';
 import { cloudCall, setCloudLive, type CloudMode, type Outgoing } from '../ai/cloud';
@@ -295,7 +296,7 @@ $('run-modes').onclick = async () => {
     return r;
   });
   const cloud = (mode: CloudMode, schema?: object) => () =>
-    cloudCall(ai, { step: 'hello', mode, model: CONFIG_DEFAULTS.cloud_model, system: 'You are a terse assistant.', user: PONG, schema, device: { system: 'You are a terse assistant.' } }, showOutgoing, receipt);
+    cloudCall(getCloud().ai, { step: 'hello', mode, model: CONFIG_DEFAULTS.cloud_model, system: 'You are a terse assistant.', user: PONG, schema, device: { system: 'You are a terse assistant.' } }, showOutgoing, receipt);
   setCloudLive(true); // lab only: PREFER_ON_DEVICE is Cloud live mode's call
   await run('PREFER_ON_DEVICE', cloud('PREFER_ON_DEVICE'));
   setCloudLive(false);
@@ -303,7 +304,7 @@ $('run-modes').onclick = async () => {
   await run('ONLY_IN_CLOUD', cloud('ONLY_IN_CLOUD'));
   await run('ONLY_IN_CLOUD + Say schema (synthetic line)', () =>
     cloudCall(
-      ai,
+      getCloud().ai,
       { step: 'hello', mode: 'ONLY_IN_CLOUD', model: CONFIG_DEFAULTS.cloud_model, system: SAY_SYSTEM, user: composeSay(contextFor(SAY_BENCH[0]), ''), schema: SAY_SCHEMA },
       showOutgoing,
       receipt,

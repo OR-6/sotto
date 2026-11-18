@@ -81,7 +81,7 @@ describe('egress guard', () => {
     const { net, fetch, guard, advance } = setup();
     guard.armCloudPermit({ texts: [SYSTEM, APPROVED], ttlMs: 1_000 });
     advance(1_001);
-    await expect(fetch(AI_URL, post(body(APPROVED)))).rejects.toThrow(/expired/);
+    await expect(fetch(AI_URL, post(body(APPROVED)))).rejects.toThrow(/no cloud permit/);
     expect(net.sent).toHaveLength(0);
   });
 
@@ -101,12 +101,16 @@ describe('egress guard', () => {
     expect(net.sent).toHaveLength(1);
   });
 
-  it('refuses to arm a second permit while one is live, and disarm works', async () => {
-    const { fetch, guard } = setup();
-    const disarm = guard.armCloudPermit({ texts: [APPROVED] });
-    expect(() => guard.armCloudPermit({ texts: [APPROVED] })).toThrow(/already armed/);
-    disarm();
+  it('holds one permit per call: each request consumes only its own, and disarm works', async () => {
+    const { net, fetch, guard } = setup();
+    const OTHER = 'rent meeting with the landlord';
+    const d1 = guard.armCloudPermit({ texts: [SYSTEM, APPROVED] });
+    guard.armCloudPermit({ texts: [SYSTEM, OTHER] });
+    await fetch(AI_URL, post(body(OTHER)));
+    await expect(fetch(AI_URL, post(body(OTHER)))).rejects.toThrow(/not the approved text/);
+    d1();
     await expect(fetch(AI_URL, post(body(APPROVED)))).rejects.toThrow(/no cloud permit/);
+    expect(net.sent).toHaveLength(1);
   });
 
   it('never records request bodies in its audit log (I6)', async () => {

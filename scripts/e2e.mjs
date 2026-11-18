@@ -73,6 +73,15 @@ async function context(browser, { width, height, theme, fake }) {
   return { ctx, page, aiRequests, errors };
 }
 
+/** The partner types a line: on a phone their side is opened first and turned back after. */
+async function partnerSays(page, text) {
+  const phone = await page.isVisible('#turn-top');
+  if (phone) await page.click('#turn-top');
+  await page.fill('#partner-input', text);
+  await page.press('#partner-input', 'Enter');
+  if (phone) await page.click('#flip');
+}
+
 async function shot(page, dir, name, fullPage = false) {
   mkdirSync(dir, { recursive: true });
   await page.screenshot({ path: join(dir, `${name}.png`), fullPage });
@@ -130,11 +139,10 @@ async function run() {
         await page.click('[data-pack=cafe]');
         await page.click('#mode-say');
         await page.click('#begin');
-        await page.waitForSelector('#partner-input');
+        await page.waitForSelector('#options', { state: 'attached' });
         await shot(page, dir, '05-say-empty');
-        await page.fill('#partner-input', 'Hi there, what can I get you?');
-        await page.press('#partner-input', 'Enter');
-        await page.waitForFunction(() => document.querySelectorAll('.option:not(.skeleton)').length === 3);
+        await partnerSays(page, 'Hi there, what can I get you?');
+        await page.waitForFunction(() => document.querySelectorAll('.option:not(.skeleton):not(:disabled)').length === 3);
         await page.mouse.move(0, 0);
         await page.waitForTimeout(250);
         await shot(page, dir, '06-say-options');
@@ -143,16 +151,14 @@ async function run() {
           check(texts.join('|') === 'A flat white, please|Just a tea for me|What do you recommend?', 'three Say options appear for the partner line');
           await axe(page, `say ${tag}`);
           // stale-call cancellation: two lines quickly → only the second's options
-          await page.fill('#partner-input', 'Hi again');
-          await page.press('#partner-input', 'Enter');
-          await page.fill('#partner-input', 'Oat milk okay?');
-          await page.press('#partner-input', 'Enter');
+          await partnerSays(page, 'Hi again');
+          await partnerSays(page, 'Oat milk okay?');
           await page.waitForFunction(() => document.querySelector('#option-1 .text')?.textContent === 'Oat is perfect, thanks');
           check(true, 'a newer line supersedes the stale call');
           // steer
           await page.fill('#steer', 'cold');
           await page.press('#steer', 'Enter');
-          await page.waitForFunction(() => document.querySelector('#option-1 .text')?.textContent === 'An iced latte, please');
+          await page.waitForFunction(() => document.querySelector('#option-1 .text')?.textContent === 'An iced latte, please' && !document.querySelector('#option-1').disabled);
           check(true, 'the steer word "cold" turns the options into iced drinks');
           await page.fill('#steer', '');
           // speak an option with the keyboard
@@ -161,15 +167,14 @@ async function run() {
           check((await page.textContent('#partner-said')) === 'An iced latte, please', 'key 1 says option 1 on the partner side');
           await page.keyboard.press('h');
           check((await page.textContent('#partner-said')) === "One moment, I'm typing.", 'H holds the floor');
-          await page.click('#flip');
+          await page.click(await page.isVisible('#turn-top') ? '#turn-top' : '#flip');
           await shot(page, dir, '07-partner-flipped');
           await page.click('#flip');
         }
         await noHorizontalScroll(page, `say ${tag}`);
         // Ask
         await page.click('#switch-ask');
-        await page.fill('#partner-input', 'The MRI shows a partial tear of the medial meniscus; we can try conservative management first.');
-        await page.press('#partner-input', 'Enter');
+        await partnerSays(page, 'The MRI shows a partial tear of the medial meniscus; we can try conservative management first.');
         await page.waitForFunction(() => document.querySelector('#ask')?.textContent?.endsWith('?'));
         await page.waitForTimeout(250);
         await shot(page, dir, '08-ask');
@@ -192,7 +197,11 @@ async function run() {
         }
         await page.click('#receipt [data-close]');
         // End → stats
-        await page.click('#end');
+        if (await page.isVisible('#end')) await page.click('#end');
+        else {
+          await page.click('#more > summary');
+          await page.click('#end-menu');
+        }
         await page.waitForSelector('#stats');
         await shot(page, dir, '10-stats');
         if (full) await axe(page, `stats ${tag}`);

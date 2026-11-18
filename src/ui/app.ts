@@ -7,7 +7,7 @@ import { loadConfig } from '../config';
 import { packById } from '../core/packs/packs';
 import { ASK_SCHEMA, ASK_SYSTEM } from '../core/prompts/ask';
 import { SAY_SCHEMA, SAY_SYSTEM } from '../core/prompts/say';
-import { app as firebaseApp, ai } from '../firebase';
+import { deviceAI, getCloud } from '../firebase';
 import { installSpeech, readSpeechState } from '../speech/recognise';
 import { loadVoices, offlineVoices } from '../speech/speak';
 import { confirmCloudLive, openReceipt, openStats } from './dialogs';
@@ -29,8 +29,21 @@ let live: Live | null = null;
 let view: SessionView | null = null;
 let replays: Replay[] = [];
 
+/** Device for device steps; the cloud app (App Check, Installations) only when a cloud step runs. */
+const aiPair = { device: deviceAI, cloud: () => getCloud().ai };
+
+let configLoaded: Promise<void> | null = null;
+/** Remote Config (cloud model name, kill switch), fetched on the first cloud screen. */
+function ensureConfig(): Promise<void> {
+  configLoaded ??= loadConfig(getCloud().app).then((c) => {
+    state.config = c;
+    cloudState.enabled = c.cloudEnabled;
+  });
+  return configLoaded;
+}
+
 function getPrivate(): PrivateBackend {
-  privateBackend ??= createPrivateBackend(ai, state.receipt);
+  privateBackend ??= createPrivateBackend(deviceAI, state.receipt);
   return privateBackend;
 }
 
@@ -41,7 +54,8 @@ const nav: Nav = {
     state.device = await readDeviceState();
   },
   askCloudLive() {
-    confirmCloudLive(() => {
+    confirmCloudLive(state.device === 'available', async () => {
+      await ensureConfig();
       state.cloudLive = true;
       setCloudLive(true);
       renderBanner();
@@ -71,10 +85,10 @@ function go(screen: Screen) {
   window.scrollTo(0, 0);
   if (screen === 'start') renderStart(root, nav);
   else if (screen === 'choose') renderChoose(root, nav, begin);
-  else if (screen === 'prepare') renderPrepare(root, nav, ai);
+  else if (screen === 'prepare') (void ensureConfig(), renderPrepare(root, nav, aiPair));
   else if (screen === 'session') startSession();
   else if (screen === 'replay') renderReplayList(root, nav, replays);
-  else if (screen === 'summary') renderSummary(root, ai, { turns: live?.turns ?? [], flags: state.flags }, () => (resetSession(), go('choose')));
+  else if (screen === 'summary') (void ensureConfig(), renderSummary(root, aiPair, { turns: live?.turns ?? [], flags: state.flags }, () => (resetSession(), go('choose'))));
   const main = root.querySelector('main');
   if (main) {
     main.setAttribute('tabindex', '-1');
@@ -93,7 +107,7 @@ async function begin() {
 
 function startSession() {
   const backend = state.cloudLive
-    ? createCloudLiveBackend(ai, state.config.cloudModel, state.receipt, { saySystem: SAY_SYSTEM, saySchema: SAY_SCHEMA, askSystem: ASK_SYSTEM, askSchema: ASK_SCHEMA })
+    ? createCloudLiveBackend(getCloud().ai, state.config.cloudModel, state.receipt, { saySystem: SAY_SYSTEM, saySchema: SAY_SCHEMA, askSystem: ASK_SYSTEM, askSchema: ASK_SCHEMA })
     : getPrivate();
   live ??= createLive({ backend, receipt: state.receipt, budgetChars: state.config.maxContextTokens * 3 });
   live.setBackend(backend);
@@ -133,6 +147,7 @@ function resetSession() {
   live?.clear();
   state.answers = [];
   state.flags.length = 0;
+  state.receipt.clear();
 }
 
 export async function boot(container: HTMLElement): Promise<void> {
@@ -147,9 +162,6 @@ export async function boot(container: HTMLElement): Promise<void> {
   replays = await loadReplays();
   state.replays = replays.length;
   go('start');
-  // Remote Config: the cloud model name and the kill switch. Never blocks the first screen.
-  loadConfig(firebaseApp).then((c) => {
-    state.config = c;
-    cloudState.enabled = c.cloudEnabled;
-  });
+  // Remote Config is fetched only when a cloud step is opened (ensureConfig), so Private mode
+  // makes no request at all.
 }
