@@ -154,6 +154,12 @@ describe('filterAsk', () => {
     expect(f.result?.means).toBe('');
     expect(f.notes).toContain('means invented a number, dropped');
   });
+  it('accepts ordinals and "twice" (measured false drops in the step-zero bench)', () => {
+    expect(filterAsk({ means: 'Your rent will be 45 euros higher from March 1st.', ask: 'When?', flag: { kind: 'none', quote: '' } }, 'Your rent goes up by 45 euros from the first of March.').result?.means).toContain('March 1st');
+    expect(filterAsk({ means: 'Swallow one tablet two times each day with food.', ask: 'Why?', flag: { kind: 'none', quote: '' } }, 'Take one tablet twice a day with food.').result?.means).toContain('two times');
+    expect(filterAsk({ means: 'Sign by the 15th.', ask: 'Why?', flag: { kind: 'none', quote: '' } }, 'Sign the renewal by the fifteenth.').result?.means).toBe('Sign by the 15th.');
+  });
+
   it('accepts numbers the line gave as words, rejects one-word flag quotes', () => {
     const l = 'That means six weeks of physiotherapy, and your rent goes up by forty five euros.';
     expect(filterAsk({ means: 'Physio for 6 weeks; rent up 45 euros.', ask: 'When?', flag: { kind: 'none', quote: '' } }, l).result?.means).toBe('Physio for 6 weeks; rent up 45 euros.');
@@ -235,5 +241,18 @@ describe('stats', () => {
     expect(s.answers).toBe(2);
     expect(s.words).toBe(5);
     expect(s.wpm).toBe(100); // 5 words in 3 seconds of composing
+  });
+});
+
+describe('compact Say lines format', async () => {
+  const { parseSayLines } = await import('../src/core/prompts/say-lines');
+  it('parses complete lines and ignores a line still being written', () => {
+    expect(parseSayLines('A: To go, please\nB: For here, thanks\nQ: Is there a seat?')).toEqual([
+      { text: 'To go, please', kind: 'answer' },
+      { text: 'For here, thanks', kind: 'alternative' },
+      { text: 'Is there a seat?', kind: 'question' },
+    ]);
+    expect(parseSayLines('A: To go, please\nB: For he', false)).toEqual([{ text: 'To go, please', kind: 'answer' }]);
+    expect(parseSayLines('1. A: Yes\n2) Q: Why?')).toEqual([{ text: 'Yes', kind: 'answer' }, { text: 'Why?', kind: 'question' }]);
   });
 });

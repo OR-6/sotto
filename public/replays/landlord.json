@@ -1,0 +1,57 @@
+{
+  "kind": "sotto-replay",
+  "version": 1,
+  "id": "landlord",
+  "title": "The rent conversation",
+  "mode": "ask",
+  "pack": "landlord",
+  "partner": "my landlord",
+  "recordedAt": "2026-11-19T00:27:24.010Z",
+  "browser": "Chrome 157",
+  "machine": "Mac, 10 CPU cores, 16 GB",
+  "steps": [
+    {
+      "at": 0,
+      "partner": "Your rent goes up by 45 euros from the first of March.",
+      "firstMs": 5364,
+      "totalMs": 5364,
+      "ask": {
+        "means": "",
+        "ask": "Can you please send me a written copy of this rent increase?",
+        "flag": {
+          "kind": "cost",
+          "quote": "45 euros"
+        }
+      }
+    },
+    {
+      "at": 5365,
+      "partner": "The service costs are also being recalculated, so there may be an extra charge.",
+      "firstMs": 2917,
+      "totalMs": 4207,
+      "ask": {
+        "means": "The landlord is changing the amount you pay each month, and possibly adding other fees.",
+        "ask": "Could you please provide a written breakdown of these changes?",
+        "flag": {
+          "kind": "cost",
+          "quote": "extra charge"
+        }
+      }
+    },
+    {
+      "at": 9574,
+      "partner": "I need you to sign the renewal by the fifteenth, otherwise we treat it as a refusal.",
+      "firstMs": 4247,
+      "totalMs": 4247,
+      "ask": {
+        "means": "",
+        "ask": "Can you please send me the updated lease agreement for review?",
+        "flag": {
+          "kind": "deadline",
+          "quote": "by the fifteenth"
+        }
+      }
+    }
+  ],
+  "bytesOut": 0
+}

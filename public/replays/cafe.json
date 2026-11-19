@@ -1,0 +1,100 @@
+{
+  "kind": "sotto-replay",
+  "version": 1,
+  "id": "cafe",
+  "title": "At the café counter",
+  "mode": "say",
+  "pack": "cafe",
+  "partner": "the barista",
+  "recordedAt": "2026-11-19T00:26:45.918Z",
+  "browser": "Chrome 157",
+  "machine": "Mac, 10 CPU cores, 16 GB",
+  "steps": [
+    {
+      "at": 0,
+      "partner": "Hi there, what can I get you?",
+      "firstMs": 1761,
+      "totalMs": 4185,
+      "options": [
+        {
+          "text": "I'll have a latte, please.",
+          "kind": "answer"
+        },
+        {
+          "text": "Hmm, maybe a tea instead.",
+          "kind": "alternative"
+        },
+        {
+          "text": "Do you have any pastries?",
+          "kind": "question"
+        }
+      ],
+      "chose": 0
+    },
+    {
+      "at": 4186,
+      "partner": "Sure. Oat milk okay?",
+      "firstMs": 2098,
+      "totalMs": 3634,
+      "steer": "cold",
+      "options": [
+        {
+          "text": "Yes, that would be great, thank you.",
+          "kind": "answer"
+        },
+        {
+          "text": "Actually, could I get that iced?",
+          "kind": "alternative"
+        },
+        {
+          "text": "Is there an iced latte option?",
+          "kind": "question"
+        }
+      ],
+      "chose": 0
+    },
+    {
+      "at": 11305,
+      "partner": "Anything to eat with that?",
+      "firstMs": 2131,
+      "totalMs": 3538,
+      "options": [
+        {
+          "text": "Just the latte, thanks.",
+          "kind": "answer"
+        },
+        {
+          "text": "Hmm, maybe a muffin.",
+          "kind": "alternative"
+        },
+        {
+          "text": "What kind of muffins do you have?",
+          "kind": "question"
+        }
+      ],
+      "chose": 1
+    },
+    {
+      "at": 14844,
+      "partner": "Can I get a name for the cup?",
+      "firstMs": 2046,
+      "totalMs": 3651,
+      "options": [
+        {
+          "text": "Just call it Alex.",
+          "kind": "answer"
+        },
+        {
+          "text": "Nope, I'm good with just the latte.",
+          "kind": "alternative"
+        },
+        {
+          "text": "Do you have blueberry muffins?",
+          "kind": "question"
+        }
+      ],
+      "chose": 2
+    }
+  ],
+  "bytesOut": 0
+}

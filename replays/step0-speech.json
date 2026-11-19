@@ -1,0 +1,19 @@
+{
+  "browser": {
+    "date": "2026-11-19T00:28:47.680Z",
+    "chromeMajor": "157",
+    "platform": "macOS",
+    "cores": 10,
+    "memoryGB": 16,
+    "appCheck": "debug-token",
+    "configMissing": []
+  },
+  "before": "downloadable",
+  "state": "downloadable",
+  "summary": {
+    "n": 0,
+    "medianDelayMs": 0,
+    "p90DelayMs": 0
+  },
+  "finals": []
+}

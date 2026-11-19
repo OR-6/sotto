@@ -1,0 +1,71 @@
+{
+  "kind": "sotto-replay",
+  "version": 1,
+  "id": "clinic",
+  "title": "Knee results with the orthopaedist",
+  "mode": "ask",
+  "pack": "doctor",
+  "partner": "my doctor",
+  "recordedAt": "2026-11-19T00:27:05.792Z",
+  "browser": "Chrome 157",
+  "machine": "Mac, 10 CPU cores, 16 GB",
+  "steps": [
+    {
+      "at": 0,
+      "partner": "The MRI shows a partial tear of the medial meniscus; we can try conservative management first.",
+      "firstMs": 2510,
+      "totalMs": 3495,
+      "ask": {
+        "means": "The cartilage in your knee has a tear, but we can try non-surgical options first.",
+        "ask": "What are the conservative management options?",
+        "flag": {
+          "kind": "none",
+          "quote": ""
+        }
+      }
+    },
+    {
+      "at": 3497,
+      "partner": "That means six weeks of physiotherapy, and we see how the knee responds.",
+      "firstMs": 3193,
+      "totalMs": 4505,
+      "ask": {
+        "means": "You'll do exercises for six weeks to see if your knee gets better.",
+        "ask": "What are the potential risks of physiotherapy?",
+        "flag": {
+          "kind": "none",
+          "quote": ""
+        }
+      }
+    },
+    {
+      "at": 8003,
+      "partner": "If it does not improve, we would consider an arthroscopy, which is keyhole surgery.",
+      "firstMs": 3085,
+      "totalMs": 4317,
+      "ask": {
+        "means": "Physiotherapy is exercises to strengthen your knee. It is followed by a possible surgery.",
+        "ask": "What are the potential risks of both physiotherapy and arthroscopy?",
+        "flag": {
+          "kind": "none",
+          "quote": ""
+        }
+      }
+    },
+    {
+      "at": 12321,
+      "partner": "I can book the physio referral today if you agree.",
+      "firstMs": 4063,
+      "totalMs": 4063,
+      "ask": {
+        "means": "",
+        "ask": "What are the potential risks of physiotherapy compared to surgery?",
+        "flag": {
+          "kind": "none",
+          "quote": ""
+        }
+      }
+    }
+  ],
+  "bytesOut": 0
+}

@@ -22,6 +22,9 @@ import { ASK_BENCH, SAY_BENCH, type BenchItem } from './bench-lines';
 import { createLive, type LiveEvent } from '../ai/live';
 import { createPrivateBackend } from '../ai/private-backend';
 import { REPLAY_SCRIPTS, type Replay, type ReplayStep } from '../core/replay';
+import { buildContext } from '../core/context';
+import { parseSayLines, SAY_LINES_SYSTEM, sayLinesInstruction } from '../core/prompts/say-lines';
+import { sayInstruction } from '../core/prompts/say';
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const logEl = $('log');
@@ -428,4 +431,47 @@ $('record-replays').onclick = async () => {
     }
   }
   status.textContent = ' done';
+};
+
+// ---------- Latency: compare output formats on the same lines, interleaved ----------
+$('run-variants').onclick = async () => {
+  const status = $('variants-status');
+  const variants = [
+    { id: 'json-schema', model: createDeviceOnlyModel(ai, { system: SAY_SYSTEM, schema: SAY_SCHEMA }), lines: false },
+    { id: 'json-free', model: createDeviceOnlyModel(ai, { system: SAY_SYSTEM }), lines: false },
+    { id: 'lines-free', model: createDeviceOnlyModel(ai, { system: SAY_LINES_SYSTEM }), lines: true },
+  ];
+  for (const v of variants) await v.model.generate('Situation: a conversation\nConversation (oldest first):\nP: Hello!\n\nSteer: none.'); // warm each
+  const rows: Record<string, unknown>[] = [];
+  const items = SAY_BENCH.slice(0, 10);
+  for (const [i, item] of items.entries()) {
+    for (const v of variants) {
+      status.textContent = ` line ${i + 1}/${items.length}, ${v.id}…`;
+      const ctx = buildContext(contextFor(item));
+      const prompt = `${ctx}\n\n${v.lines ? sayLinesInstruction(item.steer ?? '') : sayInstruction(item.steer ?? '')}`;
+      const t0 = performance.now();
+      let first = 0;
+      try {
+        const r = await v.model.stream(prompt, (soFar) => {
+          if (first) return;
+          const n = v.lines ? parseSayLines(soFar, false).length : partialSayTexts(soFar).length;
+          if (n >= 1) first = performance.now() - t0;
+        });
+        const partner = item.turns.filter(([w]) => w === 'P').at(-1)?.[1] ?? '';
+        const options = v.lines ? parseSayLines(r.text) : (filterSay(parseJson(r.text), partner).padded === 0 ? filterSay(parseJson(r.text), partner).options : []);
+        const f = filterSay({ options }, partner);
+        rows.push({ id: item.id, variant: v.id, firstMs: Math.round(first || r.ms), totalMs: Math.round(r.ms), valid: f.padded === 0 && f.dropped.length === 0, options: f.options.map((o) => o.text), raw: r.text });
+        log(`${item.id} ${v.id}: first ${Math.round(first)} ms, all ${Math.round(r.ms)} ms | ${f.options.map((o) => o.text).join(' | ')}`);
+      } catch (e) {
+        rows.push({ id: item.id, variant: v.id, error: (e as Error).message });
+      }
+    }
+  }
+  const summary = variants.map((v) => {
+    const rs = rows.filter((r) => r.variant === v.id && 'totalMs' in r) as { firstMs: number; totalMs: number; valid: boolean }[];
+    return { variant: v.id, valid: rs.filter((r) => r.valid).length, n: rs.length, firstMedianMs: med(rs.map((r) => r.firstMs)), totalMedianMs: med(rs.map((r) => r.totalMs)), totalP90Ms: p90(rs.map((r) => r.totalMs)) };
+  });
+  log('VARIANTS', summary);
+  status.textContent = ' done';
+  await save('latency-variants', { browser: browserInfo(), summary, rows });
 };
