@@ -34,6 +34,7 @@ const FAKE = `(() => {
     const steer = (p.match(/Steer: ([^.\\n"]+)\\./) || [])[1];
     let o = /oat|milk/i.test(lastP) ? ['Oat is perfect, thanks', 'Regular milk is fine', 'Do you have almond?'] : ['A flat white, please', 'Just a tea for me', 'What do you recommend?'];
     if (steer === 'cold') o = ['An iced latte, please', 'Iced tea for me', 'Any cold brew today?'];
+    if (/three lines/.test(p)) return 'A: ' + o[0] + '\\nB: ' + o[1] + '\\nQ: ' + o[2];
     return JSON.stringify({ options: [{ text: o[0], kind: 'answer' }, { text: o[1], kind: 'alternative' }, { text: o[2], kind: 'question' }] });
   };
   const wait = (ms, s) => new Promise((res, rej) => { const t = setTimeout(res, ms); s && s.addEventListener('abort', () => { clearTimeout(t); rej(new DOMException('aborted', 'AbortError')); }); });

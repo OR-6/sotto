@@ -23,8 +23,7 @@ import { renderSafety } from './safety';
 import { composeAsk } from '../core/compose';
 import { filterAsk } from '../core/filter';
 import type { RedCase } from '../core/redteam';
-import { composeSay } from '../core/compose';
-import { parseJson, filterSay } from '../core/filter';
+import { parseJson } from '../core/filter';
 import { voiceDigest } from '../core/prompts/voice';
 import { loadReplays, renderReplayList } from './replay';
 import type { Replay } from '../core/replay';
@@ -196,9 +195,10 @@ async function compareVoice(voice: string) {
   const line = 'So what did you get up to this weekend?';
   const ctx = { situation: 'Family', partner: 'my sister', tone: state.settings.tone, joke: false, brief: '', voice: '', turns: [{ id: 1, who: 'P' as const, text: line, at: 0, via: 'typed' as const }], budgetChars: 3000 };
   const run = async (v: string) => {
-    const r = await getPrivate().say(composeSay({ ...ctx, voice: v }, ''), () => undefined, new AbortController().signal);
+    const b = getPrivate();
+    const r = await b.say(b.sayFormat.compose({ ...ctx, voice: v }, ''), () => undefined, new AbortController().signal);
     state.receipt.recordDevice({ step: v ? 'voice after' : 'voice before', mode: 'ONLY_ON_DEVICE', ms: r.ms });
-    return filterSay(parseJson(r.text), line).options.map((o) => o.text);
+    return b.sayFormat.final(r.text, line).options.map((o) => o.text);
   };
   const before = await run('');
   const after = await run(voice);
@@ -211,9 +211,9 @@ async function runRedLive(c: RedCase) {
   const b = getPrivate();
   const signal = new AbortController().signal;
   if (c.mode === 'say') {
-    const r = await b.say(composeSay(ctx, ''), () => undefined, signal);
+    const r = await b.say(b.sayFormat.compose(ctx, ''), () => undefined, signal);
     state.receipt.recordDevice({ step: `safety ${c.id}`, mode: 'ONLY_ON_DEVICE', ms: r.ms });
-    const f = filterSay(parseJson(r.text), c.line);
+    const f = b.sayFormat.final(r.text, c.line);
     return { kept: f.options.map((o) => (o.filler ? `${o.text} (quick reply)` : o.text)), dropped: f.dropped.map((d) => `${d.text} (${d.why})`), ms: r.ms };
   }
   const r = await b.ask(composeAsk(ctx), () => undefined, signal);
@@ -233,8 +233,8 @@ async function measureLatency() {
   for (let i = 0; i < 3; i++) {
     const t0 = performance.now();
     let f = 0;
-    const r = await b.say(composeSay(ctx, ''), (soFar) => {
-      if (!f && /"text"\s*:\s*"[^"]+"/.test(soFar)) f = performance.now() - t0;
+    const r = await b.say(b.sayFormat.compose(ctx, ''), (soFar) => {
+      if (!f && b.sayFormat.partial(soFar).length) f = performance.now() - t0;
     }, new AbortController().signal);
     state.receipt.recordDevice({ step: 'latency check', mode: 'ONLY_ON_DEVICE', ms: r.ms });
     first.push(f || r.ms);

@@ -51,7 +51,7 @@ npm run dev
 
 Built from scratch for #BuildHybridAI 2026. Measured on **desktop Chrome 157, a Mac with 10 CPU cores and 16 GB**, 19 Nov 2026 ([docs/STEP0-REPORT.md](docs/STEP0-REPORT.md)):
 
-- Say: **20 of 20** partner lines gave three valid suggestions; the first appeared after a median **1.9 s**, all three after **3.5 s** (streamed; the first on-device call of a session took 13.5 s, which is why Sotto warms the model when a conversation starts).
+- Say: **20 of 20** partner lines gave three valid suggestions in the first bench (JSON output: first after 1.9 s, all three after 3.5 s, median). Switching the on-device output to three plain lines brought that to **1.2 s for the first suggestion and 1.9 s for all three** (median of 10 lines, 10 of 10 valid). The first on-device call of a session takes about 13.5 s, which is why Sotto warms the model when a conversation starts.
 - Ask: **8 of 8** lines gave a plain meaning or a question to ask; flags on 4 of 5 lines carrying a deadline, cost or decision.
 - During the whole on-device bench: **0 requests to any model host, 0 bytes sent.**
 - On-device speech recognition was not yet available in that Chrome (the language pack stayed "downloadable"); the other person can type on their side until it is.

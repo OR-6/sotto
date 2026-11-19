@@ -114,14 +114,17 @@ describe('cloudCall', () => {
 
 describe('Private mode end to end (invariant I1)', () => {
   it('a live partner turn causes zero network requests and a zero-byte receipt', async () => {
-    const LanguageModel = fakeLanguageModel('available', JSON.stringify({ options: [{ text: 'Yes, please', kind: 'answer' }, { text: 'No, thanks', kind: 'alternative' }, { text: 'What else is there?', kind: 'question' }] }));
+    const LanguageModel = fakeLanguageModel('available', 'A: Yes, please\nB: No, thanks\nQ: What else is there?');
     setWindow({ LanguageModel });
     const receipt = createReceipt();
     const backend = createPrivateBackend(env.ai, receipt, { LanguageModel });
     const live = createLive({ backend, receipt, budgetChars: 3000 });
-    const done = new Promise((resolve) => live.on((e) => e.type === 'say' && resolve(e)));
+    const done = new Promise<{ options: { text: string }[]; padded: number }>((resolve) => live.on((e) => e.type === 'say' && resolve(e)));
     live.partner(LIVE);
-    await done;
+    const e = await done;
+    expect(e.options.map((o) => o.text)).toEqual(['Yes, please', 'No, thanks', 'What else is there?']);
+    expect(e.padded).toBe(0);
+    expect(JSON.stringify(LanguageModel.calls[0].contents)).toContain('three lines');
     expect(net.sent).toHaveLength(0);
     expect(receipt.bytesOut).toBe(0);
     expect(JSON.stringify(receipt.toJSON())).not.toContain('meniscus');

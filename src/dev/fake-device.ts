@@ -23,6 +23,7 @@ function reply(prompt: string): string {
   }
   let opts = say(lastP);
   if (steer && steer !== 'none') opts = steer === 'cold' ? ['An iced latte, please', 'Iced tea for me', 'Any cold brew today?'] : opts.map((o) => `${o}, ${steer}`);
+  if (/three lines/.test(prompt)) return `A: ${opts[0]}\nB: ${opts[1]}\nQ: ${opts[2]}`;
   return JSON.stringify({ options: [{ text: opts[0], kind: 'answer' }, { text: opts[1], kind: 'alternative' }, { text: opts[2], kind: 'question' }] });
 }
 

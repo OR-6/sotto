@@ -3,13 +3,14 @@
 // that backend is built only from device-only models (models.ts); Cloud live mode's backend
 // comes from cloud.ts and exists only after the user's explicit per-session switch.
 // Receipts: the engine records device steps; cloud.ts records every cloud-capable call itself.
-import { composeAsk, composeSay } from '../core/compose';
+import { composeAsk } from '../core/compose';
+import { JSON_FORMAT, type SayFormat } from '../core/say-format';
 import type { ContextInput, Tone } from '../core/context';
-import { filterAsk, filterSay, parseJson, sayOptionOk } from '../core/filter';
+import { filterAsk, parseJson, sayOptionOk } from '../core/filter';
 import type { AskResult } from '../core/prompts/ask';
 import type { SayOption } from '../core/prompts/say';
 import type { Receipt } from '../core/receipt';
-import { partialAsk, partialSayTexts } from '../core/stream';
+import { partialAsk } from '../core/stream';
 import { cleanLine, lastPartner, type Speaker, type Turn } from '../core/turns';
 
 export type LiveMode = 'say' | 'ask';
@@ -20,6 +21,8 @@ export type StreamFn = (prompt: string, onText: (soFar: string) => void, signal:
 export type LiveBackend = {
   /** 'ONLY_ON_DEVICE' in Private mode, 'PREFER_ON_DEVICE' in Cloud live mode. Shown in the receipt. */
   readonly mode: string;
+  /** How Say prompts are written and read for this backend (JSON when absent). */
+  readonly sayFormat?: SayFormat;
   say: StreamFn;
   ask: StreamFn;
 };
@@ -157,14 +160,15 @@ export function createLive(opts: LiveOptions): Live {
     const current = () => inflight === ac && !ac.signal.aborted;
 
     if (mode === 'say') {
-      const prompt = composeSay(context(), steerWords);
+      const fmt = b.sayFormat ?? JSON_FORMAT;
+      const prompt = fmt.compose(context(), steerWords);
       let shown = 0;
       b.say(
         prompt,
         (soFar) => {
           if (!current()) return;
           // Partials pass the same per-option rules as the final result before they are shown.
-          const texts = partialSayTexts(soFar).filter((t) => sayOptionOk(t, last.text));
+          const texts = fmt.partial(soFar).filter((t) => sayOptionOk(t, last.text));
           if (texts.length > shown) {
             shown = texts.length;
             emit({ type: 'say-partial', texts, forTurn });
@@ -175,7 +179,7 @@ export function createLive(opts: LiveOptions): Live {
         (r) => {
           if (b.mode === 'ONLY_ON_DEVICE') opts.receipt.recordDevice({ step: steerWords ? 'say (steered)' : 'say', mode: b.mode, ms: r.ms });
           if (!current()) return;
-          const f = filterSay(parseJson(r.text), last.text);
+          const f = fmt.final(r.text, last.text);
           inflight = null;
           emit({ type: 'say', options: f.options, forTurn, ms: r.ms, source: r.source, padded: f.padded });
         },

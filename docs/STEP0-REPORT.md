@@ -9,13 +9,25 @@ Four gates decide whether the live part of Sotto is real on the reference machin
 | **G2** | Three valid options within 1.5 s (warm) on at least 16 of 20 lines? | **Quality PASS, latency FAIL.** 20/20 lines gave three valid options with nothing dropped or padded, and both steered lines used the steer word. But **0/20 finished within 1.5 s**: the first option appeared after a median **1.94 s** (p90 2.09 s) and all three after **3.55 s** (p90 3.91 s). |
 | **G3** | Does App Check, enforced, let the hosted site call the cloud from a fresh browser, and refuse a call without a token? | **Pending: no hosting site yet.** On localhost with a registered debug token, three cloud calls succeeded through App Check and the egress guard logged exactly those three requests (2,072 bytes, all with a one-shot permit). |
 
-## Decision: GO, with a revised latency target and a latency plan
+## Decision: GO, with a latency plan (format change measured and applied below)
 
 The model works on device, gives good answers, and the guards hold under real use. Latency is the risk:
 
 - **Where the time goes.** The first token arrives after about 1.4 s: the SDK creates a new on-device session for every call, which processes the system prompt again. The remaining ~2 s is output: the JSON wrapper (keys, quotes, braces, kinds) is roughly as long as the three sentences themselves.
 - **What we do.** (1) Measure a compact format: three plain lines ("A:", "B:", "Q:") with no schema, against JSON with and without a schema, on the same lines, interleaved (the lab's "Compare formats"). Switch only if it is faster with equal validity. (2) Streaming already shows the first option at ~1.9 s; the UI keeps the previous options usable and **Hold on** covers the wait. (3) Next: start a call on stable interim speech, before the final result.
 - **Revised target, stated honestly:** first option visible within **2 s** median on this machine; all three as fast as the format allows. The README reports whichever numbers are measured, with the machine named.
+
+## The format change (measured 19 Nov, 01:37)
+
+The lab's "Compare formats" ran the first ten Say lines in three formats, interleaved, on the same machine (`replays/step0-latency-variants.json`):
+
+| Format | Valid | First option, median | All three, median / p90 |
+|---|---|---|---|
+| JSON with a schema (as in the bench above) | 10/10 | 1.67 s | 3.01 s / 4.20 s |
+| JSON without a schema | 0/10 (no JSON produced) | n/a | n/a |
+| **Three plain lines ("A:", "B:", "Q:"), no schema** | **10/10** | **1.22 s** | **1.85 s / 2.34 s** |
+
+**Decision: on-device Say now uses three plain lines** (`src/core/say-format.ts`); Cloud live mode keeps JSON with a schema. The first option now appears within the original 1.5 s target at the median; all three take about 1.9 s. Two of the ten plain-line replies slipped into the other person's voice ("Hot or iced latte for you?"), so the prompt now says every line is the user's side of the conversation; that one-sentence change has not been re-measured yet. The lab's Say bench now uses the same format as the app, so a rerun measures exactly what ships.
 
 ## Ask (8 lines)
 

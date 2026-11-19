@@ -1,0 +1,429 @@
+{
+  "browser": {
+    "date": "2026-11-19T00:37:16.242Z",
+    "chromeMajor": "157",
+    "platform": "macOS",
+    "cores": 10,
+    "memoryGB": 16,
+    "appCheck": "debug-token",
+    "configMissing": []
+  },
+  "summary": [
+    {
+      "variant": "json-schema",
+      "valid": 10,
+      "n": 10,
+      "firstMedianMs": 1673,
+      "totalMedianMs": 3014,
+      "totalP90Ms": 4201
+    },
+    {
+      "variant": "json-free",
+      "valid": 0,
+      "n": 10,
+      "firstMedianMs": 2426,
+      "totalMedianMs": 2426,
+      "totalP90Ms": 3187
+    },
+    {
+      "variant": "lines-free",
+      "valid": 10,
+      "n": 10,
+      "firstMedianMs": 1223,
+      "totalMedianMs": 1848,
+      "totalP90Ms": 2343
+    }
+  ],
+  "rows": [
+    {
+      "id": "S01",
+      "variant": "json-schema",
+      "firstMs": 1690,
+      "totalMs": 3079,
+      "valid": true,
+      "options": [
+        "I'll take a latte, please.",
+        "Hmm, maybe a tea today.",
+        "What kind of teas do you have?"
+      ],
+      "raw": "{\"options\": [{\"text\": \"I'll take a latte, please.\", \"kind\": \"answer\"}, {\"text\": \"Hmm, maybe a tea today.\", \"kind\": \"alternative\"}, {\"text\": \"What kind of teas do you have?\" , \"kind\": \"question\"}]}"
+    },
+    {
+      "id": "S01",
+      "variant": "json-free",
+      "firstMs": 2426,
+      "totalMs": 2426,
+      "valid": false,
+      "options": [
+        "Yes, please",
+        "No, thank you",
+        "Can you say that again?"
+      ],
+      "raw": "```json\n{\n  \"options\": [\n    \"I'll have a latte, please.\",\n    \"Can I get a tea, iced?\",\n    \"What kind of pastries do you have today?\"\n  ]\n}\n```"
+    },
+    {
+      "id": "S01",
+      "variant": "lines-free",
+      "firstMs": 1082,
+      "totalMs": 1704,
+      "valid": true,
+      "options": [
+        "Just a latte, please.",
+        "Hot or iced latte for you?",
+        "And what's your name for the cup?"
+      ],
+      "raw": "A: Just a latte, please.\nB: Hot or iced latte for you?\nQ: And what's your name for the cup?"
+    },
+    {
+      "id": "S02",
+      "variant": "json-schema",
+      "firstMs": 1673,
+      "totalMs": 2982,
+      "valid": true,
+      "options": [
+        "Yes, that would be nice and cold.",
+        "Actually, a cold brew sounds good.",
+        "How cold will that be?"
+      ],
+      "raw": "{\"options\": [{\"text\": \"Yes, that would be nice and cold.\", \"kind\": \"answer\"}, {\"text\": \"Actually, a cold brew sounds good.\", \"kind\": \"alternative\"}, {\"text\": \"How cold will that be?\" , \"kind\": \"question\"}]}"
+    },
+    {
+      "id": "S02",
+      "variant": "json-free",
+      "firstMs": 2421,
+      "totalMs": 2421,
+      "valid": false,
+      "options": [
+        "Yes, please",
+        "No, thank you",
+        "Can you say that again?"
+      ],
+      "raw": "```json\n{\n  \"responses\": [\n    \"Yes, cold oat milk would be great.\",\n    \"Actually, could I have an iced coffee instead?\",\n    \"How about a cold brew then?\"\n  ]\n}\n```"
+    },
+    {
+      "id": "S02",
+      "variant": "lines-free",
+      "firstMs": 1160,
+      "totalMs": 1845,
+      "valid": true,
+      "options": [
+        "Yes, cold oat milk sounds great.",
+        "Would you like that iced or straight up cold?",
+        "How much will that be, please?"
+      ],
+      "raw": "A: Yes, cold oat milk sounds great.\nB: Would you like that iced or straight up cold?\nQ: How much will that be, please?\n\n\n\n"
+    },
+    {
+      "id": "S03",
+      "variant": "json-schema",
+      "firstMs": 1523,
+      "totalMs": 2857,
+      "valid": true,
+      "options": [
+        "To go, please.",
+        "Actually, I'll stay.",
+        "What kind of coffee do you recommend?"
+      ],
+      "raw": "{\"options\": [ {\"text\": \"To go, please.\", \"kind\": \"answer\"}, {\"text\": \"Actually, I'll stay.\", \"kind\": \"alternative\"}, {\"text\": \"What kind of coffee do you recommend?\" , \"kind\": \"question\"} ]}"
+    },
+    {
+      "id": "S03",
+      "variant": "json-free",
+      "firstMs": 2176,
+      "totalMs": 2176,
+      "valid": false,
+      "options": [
+        "Yes, please",
+        "No, thank you",
+        "Can you say that again?"
+      ],
+      "raw": "```json\n{\n  \"options\": [\n    \"For here, thank you.\",\n    \"Actually, could it be iced?\",\n    \"Just to go, please.\"\n  ]\n}\n```"
+    },
+    {
+      "id": "S03",
+      "variant": "lines-free",
+      "firstMs": 1085,
+      "totalMs": 1747,
+      "valid": true,
+      "options": [
+        "For here, please.",
+        "I'll take a latte, oat milk.",
+        "What kind of pastry do you recommend?"
+      ],
+      "raw": "A: For here, please.\nB: I'll take a latte, oat milk.\nQ: What kind of pastry do you recommend?"
+    },
+    {
+      "id": "S04",
+      "variant": "json-schema",
+      "firstMs": 1519,
+      "totalMs": 2755,
+      "valid": true,
+      "options": [
+        "No, thank you.",
+        "Maybe a pastry.",
+        "What kind of cakes do you have?"
+      ],
+      "raw": "{\"options\": [{\"text\": \"No, thank you.\", \"kind\": \"answer\"}, {\"text\": \"Maybe a pastry.\", \"kind\": \"alternative\"}, {\"text\": \"What kind of cakes do you have?\" , \"kind\": \"question\"}]}"
+    },
+    {
+      "id": "S04",
+      "variant": "json-free",
+      "firstMs": 2248,
+      "totalMs": 2248,
+      "valid": false,
+      "options": [
+        "Yes, please",
+        "No, thank you",
+        "Can you say that again?"
+      ],
+      "raw": "```json\n{\n  \"options\": [\n    \"No thank you, I'm good.\",\n    \"Yes, what do you recommend?\",\n    \"Just a coffee, please.\"\n  ]\n}\n```"
+    },
+    {
+      "id": "S04",
+      "variant": "lines-free",
+      "firstMs": 1223,
+      "totalMs": 1848,
+      "valid": true,
+      "options": [
+        "No, thank you, I'm good.",
+        "Just the latte will be perfect.",
+        "What's the fastest way to pay?"
+      ],
+      "raw": "A: No, thank you, I'm good.\nB: Just the latte will be perfect.\nQ: What's the fastest way to pay?\n\n\n\n"
+    },
+    {
+      "id": "S05",
+      "variant": "json-schema",
+      "firstMs": 1580,
+      "totalMs": 2899,
+      "valid": true,
+      "options": [
+        "Soy is fine, thank you.",
+        "Hmm, maybe just tea then.",
+        "Do you have any other milk alternatives?"
+      ],
+      "raw": "{\"options\": [{\"text\": \"Soy is fine, thank you.\", \"kind\": \"answer\"}, {\"text\": \"Hmm, maybe just tea then.\", \"kind\": \"alternative\"}, {\"text\": \"Do you have any other milk alternatives?\" , \"kind\": \"question\"}]}"
+    },
+    {
+      "id": "S05",
+      "variant": "json-free",
+      "firstMs": 2349,
+      "totalMs": 2349,
+      "valid": false,
+      "options": [
+        "Yes, please",
+        "No, thank you",
+        "Can you say that again?"
+      ],
+      "raw": "```json\n{\n  \"options\": [\n    \"Yes, soy is fine, please.\",\n    \"Hmm, what else do you have?\",\n    \"To go, please. Thank you.\"\n  ]\n}\n```"
+    },
+    {
+      "id": "S05",
+      "variant": "lines-free",
+      "firstMs": 1149,
+      "totalMs": 1819,
+      "valid": true,
+      "options": [
+        "Yes, soy is fine for me.",
+        "I'll have a latte, please.",
+        "What kind of coffee beans do you use?"
+      ],
+      "raw": "A: Yes, soy is fine for me.\nB: I'll have a latte, please. \nQ: What kind of coffee beans do you use?"
+    },
+    {
+      "id": "S06",
+      "variant": "json-schema",
+      "firstMs": 1630,
+      "totalMs": 3014,
+      "valid": true,
+      "options": [
+        "I've been feeling mostly the same.",
+        "I'm a little worried, to be honest.",
+        "What did the tests actually show?"
+      ],
+      "raw": "{\"options\": [{\"text\": \"I've been feeling mostly the same.\", \"kind\": \"answer\"}, {\"text\": \"I'm a little worried, to be honest.\", \"kind\": \"alternative\"}, {\"text\": \"What did the tests actually show?\" , \"kind\": \"question\"}]}"
+    },
+    {
+      "id": "S06",
+      "variant": "json-free",
+      "firstMs": 2442,
+      "totalMs": 2442,
+      "valid": false,
+      "options": [
+        "Yes, please",
+        "No, thank you",
+        "Can you say that again?"
+      ],
+      "raw": "```json\n{\n  \"options\": [\n    \"I've been feeling a little better, thank you.\",\n    \"Actually, some new symptoms have started.\",\n    \"What did you find during the tests?\"\n  ]\n}\n```"
+    },
+    {
+      "id": "S06",
+      "variant": "lines-free",
+      "firstMs": 1495,
+      "totalMs": 2206,
+      "valid": true,
+      "options": [
+        "I've been experiencing persistent headaches.",
+        "Do we need to discuss any specific symptoms further?",
+        "What tests did you run yesterday?"
+      ],
+      "raw": "Y: Mostly okay, a little fatigued still.\nA: I've been experiencing persistent headaches.\nB: Do we need to discuss any specific symptoms further?\nQ: What tests did you run yesterday?\n\n\n\n"
+    },
+    {
+      "id": "S07",
+      "variant": "json-schema",
+      "firstMs": 2695,
+      "totalMs": 4470,
+      "valid": true,
+      "options": [
+        "No, actually I feel a little relieved.",
+        "I'm not sure, what do you think it could be?",
+        "Could you tell me what you've found so far?"
+      ],
+      "raw": "{\"options\": [ {\"text\": \"No, actually I feel a little relieved.\", \"kind\": \"answer\"}, {\"text\": \"I'm not sure, what do you think it could be?\", \"kind\": \"question\"}, {\"text\": \"Could you tell me what you've found so far?\", \"kind\": \"question\"} ]}"
+    },
+    {
+      "id": "S07",
+      "variant": "json-free",
+      "firstMs": 3187,
+      "totalMs": 3187,
+      "valid": false,
+      "options": [
+        "Yes, please",
+        "No, thank you",
+        "Can you say that again?"
+      ],
+      "raw": "```json\n{\n  \"options\": [\n    \"No, I'm not experiencing any pain right now.\",\n    \"I'm a little worried about what might be wrong.\",\n    \"What do the test results show?\"\n  ]\n}\n```"
+    },
+    {
+      "id": "S07",
+      "variant": "lines-free",
+      "firstMs": 1433,
+      "totalMs": 2065,
+      "valid": true,
+      "options": [
+        "No, I don't feel any pain currently.",
+        "Maybe some discomfort, but nothing sharp.",
+        "What does this mean for the next steps?"
+      ],
+      "raw": "A: No, I don't feel any pain currently. \nB: Maybe some discomfort, but nothing sharp.\nQ: What does this mean for the next steps?"
+    },
+    {
+      "id": "S08",
+      "variant": "json-schema",
+      "firstMs": 2091,
+      "totalMs": 3458,
+      "valid": true,
+      "options": [
+        "Yes, please, that would be helpful.",
+        "Maybe we could discuss other possibilities?",
+        "What are the next steps then?"
+      ],
+      "raw": "{\"options\": [{\"text\": \"Yes, please, that would be helpful.\", \"kind\": \"answer\"}, {\"text\": \"Maybe we could discuss other possibilities?\", \"kind\": \"alternative\"}, {\"text\": \"What are the next steps then?\" , \"kind\": \"question\"}]}"
+    },
+    {
+      "id": "S08",
+      "variant": "json-free",
+      "firstMs": 2653,
+      "totalMs": 2653,
+      "valid": false,
+      "options": [
+        "Yes, please",
+        "No, thank you",
+        "Can you say that again?"
+      ],
+      "raw": "```json\n{\n  \"options\": [\n    \"Yes, please, I'd appreciate that.\",\n    \"Are there other possible explanations?\",\n    \"What are the next steps we will take?\"\n  ]\n}\n```"
+    },
+    {
+      "id": "S08",
+      "variant": "lines-free",
+      "firstMs": 1527,
+      "totalMs": 2170,
+      "valid": true,
+      "options": [
+        "Yes, please, I'd appreciate that.",
+        "Could we also discuss treatment options?",
+        "What are the potential side effects of each?"
+      ],
+      "raw": "A: Yes, please, I'd appreciate that.\nB: Could we also discuss treatment options?\nQ: What are the potential side effects of each?"
+    },
+    {
+      "id": "S09",
+      "variant": "json-schema",
+      "firstMs": 1830,
+      "totalMs": 3399,
+      "valid": true,
+      "options": [
+        "I'm actually really busy that day.",
+        "Oh, Sunday might be tricky for me.",
+        "What time were you thinking of having dinner?"
+      ],
+      "raw": "{\"options\": [{\"text\": \"I'm actually really busy that day.\", \"kind\": \"answer\"}, {\"text\": \"Oh, Sunday might be tricky for me.\", \"kind\": \"alternative\"}, {\"text\": \"What time were you thinking of having dinner?\", \"kind\": \"question\"}]}"
+    },
+    {
+      "id": "S09",
+      "variant": "json-free",
+      "firstMs": 3083,
+      "totalMs": 3083,
+      "valid": false,
+      "options": [
+        "Yes, please",
+        "No, thank you",
+        "Can you say that again?"
+      ],
+      "raw": "```json\n{\n  \"options\": [\n    \"Sunday works, I'm pretty busy this week.\",\n    \"I'm really busy Sunday, but thanks for asking.\",\n    \"Hmm, I’m quite busy. What time?\"\n  ]\n}\n```"
+    },
+    {
+      "id": "S09",
+      "variant": "lines-free",
+      "firstMs": 1596,
+      "totalMs": 2343,
+      "valid": true,
+      "options": [
+        "Sunday sounds nice, but I’m actually pretty busy.",
+        "Maybe another time? I have things planned already.",
+        "What are your plans keeping you so busy?"
+      ],
+      "raw": "A: Sunday sounds nice, but I’m actually pretty busy.\nB: Maybe another time? I have things planned already.\nQ: What are your plans keeping you so busy?\n\n\n\n"
+    },
+    {
+      "id": "S10",
+      "variant": "json-schema",
+      "firstMs": 1985,
+      "totalMs": 4201,
+      "valid": true,
+      "options": [
+        "Not bad, all things considered.",
+        "Pretty busy, but happy to be home.",
+        "It was good, thanks. How was yours?"
+      ],
+      "raw": "{\"options\": [{\"text\": \"It was good, thanks. How was yours?\", \"kind\": \"question\"}, {\"text\": \"Pretty busy, but happy to be home. \", \"kind\": \"alternative\"}, {\"text\": \"Not bad, all things considered. \", \"kind\": \"answer\"}]}"
+    },
+    {
+      "id": "S10",
+      "variant": "json-free",
+      "firstMs": 3482,
+      "totalMs": 3482,
+      "valid": false,
+      "options": [
+        "Yes, please",
+        "No, thank you",
+        "Can you say that again?"
+      ],
+      "raw": "```json\n{\n  \"options\": [\n    \"It was good, thanks. How about yours?\",\n    \"Pretty busy. I'm thinking about ordering pizza.\",\n    \"Not bad. Did anyone watch that show?\"\n  ]\n}\n```"
+    },
+    {
+      "id": "S10",
+      "variant": "lines-free",
+      "firstMs": 1651,
+      "totalMs": 2471,
+      "valid": true,
+      "options": [
+        "It was alright, thanks for asking.",
+        "I just finished a good book, relaxing.",
+        "What are you all planning for dinner tonight?"
+      ],
+      "raw": "A: It was alright, thanks for asking. \nB: I just finished a good book, relaxing. \nQ: What are you all planning for dinner tonight?\n\n\n\n"
+    }
+  ]
+}

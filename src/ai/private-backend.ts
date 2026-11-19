@@ -2,12 +2,14 @@
 // can reach the cloud: the pre-check, the post-check and the egress guard all apply.
 import type { AI } from 'firebase/ai';
 import { ASK_SCHEMA, ASK_SYSTEM, JARGON_SCHEMA, JARGON_SYSTEM, REPEAT_SCHEMA, REPEAT_SYSTEM } from '../core/prompts/ask';
-import { COMPLETE_SCHEMA, COMPLETE_SYSTEM, SAY_SCHEMA, SAY_SYSTEM } from '../core/prompts/say';
+import { COMPLETE_SCHEMA, COMPLETE_SYSTEM } from '../core/prompts/say';
+import { LINES_FORMAT, type SayFormat } from '../core/say-format';
 import type { Receipt } from '../core/receipt';
 import { createDeviceOnlyModel, type DeviceOnlyModel } from './models';
 import type { LiveBackend } from './live';
 
 export type PrivateBackend = LiveBackend & {
+  readonly sayFormat: SayFormat;
   /** A short prompt on each model so the first real call is not cold. Returns the time taken. */
   warm(): Promise<number>;
   /** Starts or awaits the model download (user gesture). */
@@ -19,7 +21,8 @@ export type PrivateBackend = LiveBackend & {
 };
 
 export function createPrivateBackend(ai: AI, receipt: Receipt, env: object = globalThis): PrivateBackend {
-  const say = createDeviceOnlyModel(ai, { system: SAY_SYSTEM, schema: SAY_SCHEMA }, env);
+  const sayFormat = LINES_FORMAT; // measured faster on device with equal validity (core/say-format.ts)
+  const say = createDeviceOnlyModel(ai, { system: sayFormat.system, schema: sayFormat.schema }, env);
   const ask = createDeviceOnlyModel(ai, { system: ASK_SYSTEM, schema: ASK_SCHEMA }, env);
   let complete: DeviceOnlyModel | null = null;
   let repeat: DeviceOnlyModel | null = null;
@@ -31,12 +34,13 @@ export function createPrivateBackend(ai: AI, receipt: Receipt, env: object = glo
   };
   return {
     mode: 'ONLY_ON_DEVICE',
+    sayFormat,
     say: (prompt, onText, signal) => say.stream(prompt, onText, signal),
     ask: (prompt, onText, signal) => ask.stream(prompt, onText, signal),
     async warm() {
       const t0 = performance.now();
       const ac = new AbortController();
-      await say.generate('Situation: a conversation\nConversation (oldest first):\nP: Hello!\n\nSteer: none. Write the three options for what I say next.', ac.signal);
+      await say.generate(sayFormat.compose({ situation: 'a conversation', partner: 'someone', tone: 'neutral', joke: false, brief: '', voice: '', turns: [{ id: 0, who: 'P', text: 'Hello!', at: 0, via: 'typed' }], budgetChars: 600 }, ''), ac.signal);
       const ms = performance.now() - t0;
       receipt.recordDevice({ step: 'warm-up', mode: 'ONLY_ON_DEVICE', ms });
       return ms;

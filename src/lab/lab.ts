@@ -23,6 +23,7 @@ import { createLive, type LiveEvent } from '../ai/live';
 import { createPrivateBackend } from '../ai/private-backend';
 import { REPLAY_SCRIPTS, type Replay, type ReplayStep } from '../core/replay';
 import { buildContext } from '../core/context';
+import { LINES_FORMAT } from '../core/say-format';
 import { parseSayLines, SAY_LINES_SYSTEM, sayLinesInstruction } from '../core/prompts/say-lines';
 import { sayInstruction } from '../core/prompts/say';
 
@@ -101,7 +102,7 @@ const contextFor = (item: BenchItem): ContextInput => {
 let sayModel: DeviceOnlyModel | null = null;
 let askModel: DeviceOnlyModel | null = null;
 function models() {
-  sayModel ??= createDeviceOnlyModel(ai, { system: SAY_SYSTEM, schema: SAY_SCHEMA });
+  sayModel ??= createDeviceOnlyModel(ai, { system: LINES_FORMAT.system, schema: LINES_FORMAT.schema }); // the app's on-device format
   askModel ??= createDeviceOnlyModel(ai, { system: ASK_SYSTEM, schema: ASK_SCHEMA });
   return { say: sayModel, ask: askModel };
 }
@@ -120,17 +121,18 @@ $('prepare').onclick = async () => {
 
 async function runSayItem(m: DeviceOnlyModel, item: BenchItem) {
   const ctx = contextFor(item);
-  const prompt = composeSay(ctx, item.steer ?? '');
+  const prompt = LINES_FORMAT.compose(ctx, item.steer ?? '');
   const t0 = performance.now();
   let firstOptionMs = 0;
   const call = await m.stream(prompt, (soFar) => {
-    if (!firstOptionMs && partialSayTexts(soFar).length >= 1) firstOptionMs = performance.now() - t0;
+    if (!firstOptionMs && LINES_FORMAT.partial(soFar).length >= 1) firstOptionMs = performance.now() - t0;
   });
   receipt.recordDevice({ step: 'say', mode: 'ONLY_ON_DEVICE', ms: call.ms });
-  const parsed = parseJson(call.text);
+  const parsedLines = parseSayLines(call.text);
+  const parsed = parsedLines.length ? { options: parsedLines } : undefined;
   const partnerLine = item.turns.filter(([w]) => w === 'P').at(-1)?.[1] ?? '';
-  const f = filterSay(parsed, partnerLine);
-  const kinds = Array.isArray((parsed as { options?: unknown[] })?.options) ? ((parsed as { options: { kind?: string }[] }).options.map((o) => o.kind)) : [];
+  const f = LINES_FORMAT.final(call.text, partnerLine);
+  const kinds = parsedLines.map((o) => o.kind);
   return {
     id: item.id,
     pack: item.pack,
@@ -197,12 +199,12 @@ $('run-device').onclick = async () => {
 
     status.textContent = ' warming up…';
     const w0 = performance.now();
-    const warm = await say.generate(composeSay(contextFor({ id: 'W', pack: 'cafe', turns: [['P', 'Hello!']] }), ''));
+    const warm = await say.generate(LINES_FORMAT.compose(contextFor({ id: 'W', pack: 'cafe', turns: [['P', 'Hello!']] }), ''));
     const coldMs = Math.round(performance.now() - w0);
     receipt.recordDevice({ step: 'warmup', mode: 'ONLY_ON_DEVICE', ms: coldMs });
     log(`warm-up (cold) ${coldMs} ms`, warm.text.slice(0, 120));
     const w1 = performance.now();
-    await say.generate(composeSay(contextFor({ id: 'W2', pack: 'cafe', turns: [['P', 'Hi again!']] }), ''));
+    await say.generate(LINES_FORMAT.compose(contextFor({ id: 'W2', pack: 'cafe', turns: [['P', 'Hi again!']] }), ''));
     const warmMs = Math.round(performance.now() - w1);
     log(`second call (warm) ${warmMs} ms`);
 
@@ -436,12 +438,25 @@ $('record-replays').onclick = async () => {
 // ---------- Latency: compare output formats on the same lines, interleaved ----------
 $('run-variants').onclick = async () => {
   const status = $('variants-status');
+  const btn = $<HTMLButtonElement>('run-variants');
+  btn.disabled = true;
+  status.textContent = ' started: warming up the three formats (about 30 to 40 seconds, nothing else shows yet)…';
+  log('Compare formats: started');
   const variants = [
     { id: 'json-schema', model: createDeviceOnlyModel(ai, { system: SAY_SYSTEM, schema: SAY_SCHEMA }), lines: false },
     { id: 'json-free', model: createDeviceOnlyModel(ai, { system: SAY_SYSTEM }), lines: false },
     { id: 'lines-free', model: createDeviceOnlyModel(ai, { system: SAY_LINES_SYSTEM }), lines: true },
   ];
-  for (const v of variants) await v.model.generate('Situation: a conversation\nConversation (oldest first):\nP: Hello!\n\nSteer: none.'); // warm each
+  try {
+    for (const [i, v] of variants.entries()) {
+      status.textContent = ` started: warming up format ${i + 1} of 3 (the first takes about 15 seconds)…`;
+      await v.model.generate('Situation: a conversation\nConversation (oldest first):\nP: Hello!\n\nSteer: none.');
+    }
+  } catch (e) {
+    status.textContent = ` could not start: ${(e as Error).message}`;
+    btn.disabled = false;
+    return;
+  }
   const rows: Record<string, unknown>[] = [];
   const items = SAY_BENCH.slice(0, 10);
   for (const [i, item] of items.entries()) {
@@ -473,5 +488,6 @@ $('run-variants').onclick = async () => {
   });
   log('VARIANTS', summary);
   status.textContent = ' done';
+  btn.disabled = false;
   await save('latency-variants', { browser: browserInfo(), summary, rows });
 };
