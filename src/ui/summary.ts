@@ -104,7 +104,7 @@ export function renderSummary(root: HTMLElement, ai: { device: Parameters<typeof
       h('p', { class: 'lede' }, 'Tick what to send to Google. Already ticked: only your own lines. What they said, including the flagged quotes, stays here unless you tick it.'),
       h('div', { class: 'row' }, count),
       list,
-      h('div', { class: 'outgoing-pane' }, h('p', { class: 'outgoing-title' }, 'Exactly this will be sent to the cloud, with short instructions:'), out),
+      h('div', { class: 'outgoing-pane' }, h('p', { class: 'outgoing-title' }, `Exactly this is sent to Google (model ${state.config.cloudModel}), with short instructions:`), out),
       h('div', { class: 'row' }, send, local, h('button', { class: 'btn', id: 'summary-done', onclick: done }, 'Clear and finish')),
       status,
       result,

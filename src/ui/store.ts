@@ -14,12 +14,21 @@ const PREFIX = 'sotto.v1.';
  */
 export const WARD = typeof location !== 'undefined' && new URLSearchParams(location.search).has('ward');
 
+/** Kept briefs and summaries expire after 30 days. */
+const EXPIRES: Partial<Record<StoreKey, number>> = { briefs: 30, summaries: 30 };
+const expire = (key: StoreKey, v: unknown): unknown => {
+  const days = EXPIRES[key];
+  if (!days || !Array.isArray(v)) return v;
+  const cutoff = Date.now() - days * 86_400_000;
+  return v.filter((x) => !(x && typeof x === 'object' && 'date' in x) || Date.parse(String((x as { date: unknown }).date)) >= cutoff);
+};
+
 export function load<T>(key: StoreKey, fallback: T): T {
   if (!STORE_KEYS.includes(key)) throw new Error(`not an allowed storage key: ${String(key)}`);
   if (WARD) return fallback;
   try {
     const raw = localStorage.getItem(PREFIX + key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
+    return raw ? (expire(key, JSON.parse(raw)) as T) : fallback;
   } catch {
     return fallback;
   }

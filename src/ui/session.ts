@@ -46,7 +46,9 @@ export function renderSession(deps: SessionDeps): SessionView {
   let listener: Listener | null = null;
   /** Set from the recogniser's own state callback (it fires before listen() returns). */
   let listeningNow = false;
-  let wantListening = state.speech === 'available';
+  // Listening starts by itself only where the other person can see the notice (the split view);
+  // on a phone it starts when the user presses Listen.
+  let wantListening = state.speech === 'available' && window.matchMedia('(min-width: 900px)').matches;
   let askedAt = 0;
   let disposed = false;
 
@@ -135,11 +137,12 @@ export function renderSession(deps: SessionDeps): SessionView {
   const scanBtn = h('button', { class: 'btn small', id: 'scan-toggle', 'aria-pressed': 'false', title: 'Switch scanning: or hold Space for one second' }, 'Scan');
   const endBtn = h('button', { class: 'btn small wide-only', id: 'end' }, 'End');
   const endMenuBtn = h('button', { class: 'btn small compact-only', id: 'end-menu' }, 'End the conversation');
-  const earBtn = h('button', { class: 'btn small', id: 'earpiece', 'aria-pressed': String(state.settings.earpiece), title: 'Ask mode: Means and Ask are read to you. Use earphones.' }, state.settings.earpiece ? 'Reading to me: on' : 'Read Ask to me');
+  const earBtn = h('button', { class: 'btn small', id: 'earpiece', 'aria-pressed': String(state.settings.earpiece), title: 'Ask mode: Means and Ask are read to you. Use earphones.' }, state.settings.earpiece ? 'Reading to me: on' : 'Read Ask to me (earphones)');
   earBtn.addEventListener('click', () => {
     saveSettings({ earpiece: !state.settings.earpiece });
     earBtn.setAttribute('aria-pressed', String(state.settings.earpiece));
-    setText(earBtn, state.settings.earpiece ? 'Reading to me: on' : 'Read Ask to me');
+    setText(earBtn, state.settings.earpiece ? 'Reading to me: on' : 'Read Ask to me (earphones)');
+    if (state.settings.earpiece) announce('Means and Ask will be read aloud. Use earphones, or the other person will hear it.');
   });
   endMenuBtn.addEventListener('click', () => endBtn.click());
   const settingsBtn = h('button', { class: 'btn small', id: 'session-settings', 'aria-label': 'Settings' }, 'Settings');

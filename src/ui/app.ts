@@ -29,7 +29,7 @@ import { voiceDigest } from '../core/prompts/voice';
 import { loadReplays, renderReplayList } from './replay';
 import type { Replay } from '../core/replay';
 import { applyTheme, state } from './state';
-import { load, save } from './store';
+import { load, save, WARD } from './store';
 import type { Brief } from '../core/prompts/prepare';
 type ResumeState = { pack: string; mode: 'say' | 'ask'; situationText: string; partnerLabel: string; brief: Brief | null; consent: boolean; at: number };
 
@@ -247,6 +247,10 @@ function resetSession(clearReceipt = true) {
   state.flags.length = 0;
   if (clearReceipt) {
     state.receipt.clear();
+    if (WARD) {
+      // A shared device: nothing about this conversation carries into the next person's.
+      Object.assign(state, { brief: null, useBrief: false, situationText: '', partnerLabel: '' });
+    }
     // Cloud live mode is per conversation: the next one starts in Private mode and asks again.
     if (state.cloudLive) {
       state.cloudLive = false;

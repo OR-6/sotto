@@ -136,7 +136,7 @@ export function renderVoice(root: HTMLElement, nav: Nav, deps: VoiceDeps): void 
       greeting,
       h('label', { class: 'field-label', for: 'voice-never' }, 'Anything you never say?'),
       never,
-      h('div', { class: 'outgoing-pane' }, h('p', { class: 'outgoing-title' }, 'Exactly this will be sent to the cloud, with short instructions:'), out),
+      h('div', { class: 'outgoing-pane' }, h('p', { class: 'outgoing-title' }, `Exactly this is sent to Google (model ${state.config.cloudModel}), with short instructions:`), out),
       h('div', { class: 'row' }, send, h('button', { class: 'btn', onclick: () => nav.go('choose') }, 'Back')),
       status,
       result,
