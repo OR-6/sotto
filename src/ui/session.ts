@@ -38,7 +38,7 @@ const MIC_ERRORS: Record<string, string> = {
   'restarting-too-often': 'Listening keeps stopping. Press Listen to try again, or let them type.',
 };
 
-export type SessionView = { el: HTMLElement; dispose(): void; refreshReceipt(): void };
+export type SessionView = { el: HTMLElement; dispose(): void; refreshReceipt(): void; setReady(ready: boolean): void };
 
 export function renderSession(deps: SessionDeps): SessionView {
   const { live } = deps;
@@ -342,6 +342,7 @@ export function renderSession(deps: SessionDeps): SessionView {
   /** Measured, per suggestion: from the end of their line to the suggestions, and where they ran. */
   const timing = h('p', { class: 'timing tabular', id: 'timing' });
   const updating = h('p', { class: 'updating', id: 'updating', 'aria-live': 'off' });
+  const readyLine = h('p', { class: 'ready-line', id: 'ready-line', role: 'status', hidden: true });
   const emptySay = h(
     'p',
     { class: 'empty-say', id: 'empty-say' },
@@ -357,7 +358,7 @@ export function renderSession(deps: SessionDeps): SessionView {
   const OPENERS = ['Hello!', 'Excuse me, can I say something?', 'I have a question.', 'I use this to talk. Please give me a moment.'];
   const openers = h('div', { class: 'row openers', id: 'openers', role: 'group', 'aria-label': 'Start the conversation' }, OPENERS.map((o) => h('button', { class: 'chip', onclick: () => say(o, 'quick') }, o)));
   emptySay.append(openers);
-  const sayPanel = h('section', { id: 'say-panel', 'aria-label': 'Say' }, emptySay, updating, optionsEl, timing, steer);
+  const sayPanel = h('section', { id: 'say-panel', 'aria-label': 'Say' }, readyLine, emptySay, updating, optionsEl, timing, steer);
 
   // ---------- Ask ----------
   const askLast = h('p', { class: 'ask-last', id: 'ask-last' });
@@ -647,6 +648,10 @@ export function renderSession(deps: SessionDeps): SessionView {
   return {
     el,
     refreshReceipt,
+    setReady(ready: boolean) {
+      setText(readyLine, ready ? '' : 'Getting the on-device model ready. The first time in a session takes about 15 seconds; quick phrases work now.');
+      readyLine.hidden = ready;
+    },
     dispose() {
       disposed = true;
       off();

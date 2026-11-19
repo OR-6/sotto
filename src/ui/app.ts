@@ -180,11 +180,14 @@ function startSession() {
   });
   root.replaceChildren(view.el);
   if (!state.cloudLive && state.device === 'available' && !state.warmMs) {
-    // Warm the model so the first real suggestion is not cold. Runs on device; sends nothing.
+    // Warm the model so the first real suggestion is not cold (measured: about 13 s for the first
+    // call of a session). Runs on device; sends nothing. The screen says it is getting ready.
+    view.setReady(false);
     getPrivate()
       .warm()
       .then((ms) => ((state.warmMs = ms), view?.refreshReceipt()))
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => view?.setReady(true));
   }
 }
 

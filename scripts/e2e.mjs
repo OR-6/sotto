@@ -167,6 +167,20 @@ async function run() {
           await page.click('#safety-back');
           await page.waitForSelector('#start');
         }
+        if (full) {
+          // Replay: real on-device sessions, played with their timings, in a browser without the model.
+          check(await page.isVisible('#replay'), 'Replay is offered when the browser has no model');
+          await page.click('#replay');
+          await page.click('[data-replay=clinic]');
+          await page.waitForSelector('.replay-label');
+          check((await page.textContent('.replay-label')).includes('Recorded on-device session'), 'a replay is labelled as a recording, with browser and machine');
+          await page.waitForFunction(() => !document.querySelector('#replay-body .ask-card.ask.skeleton'), null, { timeout: 15000 });
+          check((await page.textContent('#replay-timing')).includes('on the device'), 'the replay shows the measured timing');
+          await shot(page, dir, '01b-replay');
+          await axe(page, `replay ${tag}`);
+          await page.goto(BASE + '/', { waitUntil: 'networkidle' });
+          await page.waitForSelector('#start');
+        }
         await page.check('#consent');
         await page.click('#cloud-live');
         await page.waitForSelector('#cloud-confirm');
