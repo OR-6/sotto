@@ -160,10 +160,17 @@ describe('filterAsk', () => {
     expect(filterAsk({ means: 'Sign by the 15th.', ask: 'Why?', flag: { kind: 'none', quote: '' } }, 'Sign the renewal by the fifteenth.').result?.means).toBe('Sign by the 15th.');
   });
 
-  it('accepts numbers the line gave as words, rejects one-word flag quotes', () => {
+  it('accepts numbers the line gave as words, and a one-word quote that is in the line', () => {
     const l = 'That means six weeks of physiotherapy, and your rent goes up by forty five euros.';
     expect(filterAsk({ means: 'Physio for 6 weeks; rent up 45 euros.', ask: 'When?', flag: { kind: 'none', quote: '' } }, l).result?.means).toBe('Physio for 6 weeks; rent up 45 euros.');
-    expect(filterAsk({ means: 'x', ask: 'When?', flag: { kind: 'cost', quote: 'euros' } }, l).result?.flag.kind).toBe('none');
+    expect(filterAsk({ means: 'x', ask: 'When?', flag: { kind: 'cost', quote: 'euros' } }, l).result?.flag.kind).toBe('cost');
+    expect(filterAsk({ means: 'x', ask: 'When?', flag: { kind: 'cost', quote: 'a' } }, l).result?.flag.kind).toBe('none');
+  });
+
+  it('a Means may restate an instruction the professional gave, but not add one (measured: bench run 2)', () => {
+    const line = 'Your rent goes up by 45 euros from the first of March, and you need to sign the new agreement by Friday.';
+    expect(filterAsk({ means: 'The rent will increase, and you need to agree to the new terms soon.', ask: 'Could you send it?', flag: { kind: 'deadline', quote: 'Friday' } }, line).result).toMatchObject({ means: 'The rent will increase, and you need to agree to the new terms soon.', flag: { kind: 'deadline', quote: 'Friday' } });
+    expect(filterAsk({ means: 'You should refuse the operation.', ask: 'Why?', flag: { kind: 'none', quote: '' } }, 'We recommend the operation.').result?.means).toBe('');
   });
 
   it('downgrades a flag whose quote is not in the line', () => {

@@ -54,6 +54,9 @@ export function tidy(text: string): string {
 }
 
 const DIRECTIVE = /\b(you should|you must|you need to|take (?:\d|two|one)|stop taking|don't take|do not take|sign it|refuse (?:the|treatment)|ignore (?:the|your|all|previous))/i;
+/** The professional's line itself gives an instruction, so restating it is not advice. */
+const INSTRUCTION_RE = /\b(you (need|have|must|'ll need|will need) to|i need you to|make sure|avoid|take (one|two|three|\d+|the|these|this)|bring|don't|do not)\b/i;
+const INSTRUCTION_IN_LINE = { test: (line: string) => INSTRUCTION_RE.test(line) && !line.trim().endsWith('?') };
 const META = /\b(as an ai|language model|i cannot help|i can't help|json|option \d)\b/i;
 
 export const SAY_MIN_WORDS = 1;
@@ -185,7 +188,9 @@ export function filterAsk(raw: unknown, partnerLine: string, known = ''): AskFil
     notes.push('means invented a number, dropped');
     means = '';
   }
-  if (DIRECTIVE.test(means)) {
+  // A Means may restate an instruction the professional gave ("you need to sign by Friday");
+  // it may not add one they did not give.
+  if (DIRECTIVE.test(means) && !INSTRUCTION_IN_LINE.test(partnerLine)) {
     notes.push('means gave advice, dropped');
     means = '';
   }
@@ -206,7 +211,7 @@ export function filterAsk(raw: unknown, partnerLine: string, known = ''): AskFil
   }
   if (kind !== 'none') {
     const q = quote.replace(/[.…]+$/, '');
-    if (!q || wordCount(q) < 2 || !norm(partnerLine).includes(norm(q)) || wordCount(q) > QUOTE_MAX_WORDS) {
+    if (!q || q.length < 3 || !norm(partnerLine).includes(norm(q)) || wordCount(q) > QUOTE_MAX_WORDS) {
       notes.push('flag quote not found in the line, downgraded');
       kind = 'none';
       quote = '';

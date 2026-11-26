@@ -36,7 +36,7 @@ out.push(`- Requests to model hosts during the whole bench: **${b.summary.aiHost
 out.push('');
 out.push('| Say, 20 lines | Result |');
 out.push('|---|---|');
-out.push(`| Parsed JSON | ${say.filter((r) => r.parsedOk).length} / ${say.length} |`);
+out.push(`| Parsed (format of that run) | ${say.filter((r) => r.parsedOk).length} / ${say.length} |`);
 out.push(`| Three options passed the filter with no padding | ${sayValid} / ${say.length} |`);
 out.push(`| Kinds in order (answer, alternative, question) | ${kindsOk} / ${say.length} |`);
 out.push(`| **G2: valid and all three within 1.5 s** | **${g2} / ${say.length}** (gate: 16) |`);
