@@ -1,5 +1,5 @@
 import { defineConfig, type Plugin } from 'vite';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const root = import.meta.dirname;
@@ -22,7 +22,10 @@ function labSave(): Plugin {
             const replay = name.startsWith('replay-');
             const dir = replay ? resolve(root, 'public', 'replays') : resolve(root, 'replays');
             mkdirSync(dir, { recursive: true });
-            writeFileSync(resolve(dir, replay ? `${name.slice(7)}.json` : `step0-${name}.json`), JSON.stringify(data, null, 2) + '\n');
+            // Never overwrite earlier evidence: a second run of the same step gets a time-stamped name.
+            let file = resolve(dir, replay ? `${name.slice(7)}.json` : `step0-${name}.json`);
+            if (!replay && existsSync(file)) file = file.replace(/\.json$/, `-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+            writeFileSync(file, JSON.stringify(data, null, 2) + '\n');
             res.statusCode = 204;
           } catch {
             res.statusCode = 400;
