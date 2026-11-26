@@ -51,7 +51,8 @@
           }
         ]
       }
-    ]
+    ],
+    "target": "sotto"
   },
   "remoteconfig": {
     "template": "remoteconfig.template.json"

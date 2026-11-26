@@ -1,0 +1,286 @@
+{
+  "base": "https://sotto.web.app",
+  "date": "2026-11-26T10:37:37.260Z",
+  "results": [
+    {
+      "ok": true,
+      "what": "the built page carries its Content Security Policy"
+    },
+    {
+      "ok": true,
+      "what": "no-model browser is told plainly"
+    },
+    {
+      "ok": true,
+      "what": "without the model, Start offers phrases and typing (no silent cloud fallback)"
+    },
+    {
+      "ok": true,
+      "what": "the stance is on the first screen"
+    },
+    {
+      "ok": true,
+      "what": "axe clean: start (no model) desktop-dark"
+    },
+    {
+      "ok": true,
+      "what": "no horizontal scroll: start desktop-dark (0px)"
+    },
+    {
+      "ok": true,
+      "what": "the Safety page shows the rules at work in a browser without the model"
+    },
+    {
+      "ok": true,
+      "what": "axe clean: safety desktop-dark"
+    },
+    {
+      "ok": true,
+      "what": "Replay is offered when the browser has no model"
+    },
+    {
+      "ok": true,
+      "what": "a replay is labelled as a recording, with browser and machine"
+    },
+    {
+      "ok": true,
+      "what": "the replay shows the measured timing"
+    },
+    {
+      "ok": true,
+      "what": "axe clean: replay desktop-dark"
+    },
+    {
+      "ok": true,
+      "what": "axe clean: cloud confirm desktop-dark"
+    },
+    {
+      "ok": true,
+      "what": "Ask is unavailable without a model"
+    },
+    {
+      "ok": true,
+      "what": "the no-model session says plainly that there are no suggestions"
+    },
+    {
+      "ok": true,
+      "what": "a quick phrase speaks without any model"
+    },
+    {
+      "ok": true,
+      "what": "axe clean: no-model session desktop-dark"
+    },
+    {
+      "ok": true,
+      "what": "no AI request without consent to Cloud live (desktop-dark)"
+    },
+    {
+      "ok": true,
+      "what": "no page errors (desktop-dark, no model)"
+    },
+    {
+      "ok": true,
+      "what": "a LanguageModel that is not the browser's own is refused"
+    },
+    {
+      "ok": true,
+      "what": "axe clean: choose desktop-dark"
+    },
+    {
+      "ok": true,
+      "what": "no horizontal scroll: choose desktop-dark (0px)"
+    },
+    {
+      "ok": true,
+      "what": "the partner side says Sotto listens on this device only (desktop-dark)"
+    },
+    {
+      "ok": true,
+      "what": "interim words show while they speak"
+    },
+    {
+      "ok": true,
+      "what": "three Say options appear for the partner line"
+    },
+    {
+      "ok": true,
+      "what": "axe clean: say desktop-dark"
+    },
+    {
+      "ok": true,
+      "what": "the top bar fits at 1024 px (0px over)"
+    },
+    {
+      "ok": true,
+      "what": "the top bar fits at 1280 px (0px over)"
+    },
+    {
+      "ok": true,
+      "what": "a newer line supersedes the stale call"
+    },
+    {
+      "ok": true,
+      "what": "the steer word \"cold\" turns the options into iced drinks"
+    },
+    {
+      "ok": true,
+      "what": "key 1 says option 1 on the partner side"
+    },
+    {
+      "ok": true,
+      "what": "H holds the floor"
+    },
+    {
+      "ok": true,
+      "what": "offline: the pill says offline"
+    },
+    {
+      "ok": true,
+      "what": "offline: suggestions still arrive, measured, on this device"
+    },
+    {
+      "ok": true,
+      "what": "no horizontal scroll: say desktop-dark (0px)"
+    },
+    {
+      "ok": true,
+      "what": "Ask flags the decision with the exact quote"
+    },
+    {
+      "ok": true,
+      "what": "the decision is pinned to the list"
+    },
+    {
+      "ok": true,
+      "what": "Repeat it back writes a \"So ...\" sentence"
+    },
+    {
+      "ok": true,
+      "what": "axe clean: ask desktop-dark"
+    },
+    {
+      "ok": true,
+      "what": "no horizontal scroll: ask desktop-dark (0px)"
+    },
+    {
+      "ok": true,
+      "what": "the receipt shows nothing sent in Private mode"
+    },
+    {
+      "ok": true,
+      "what": "axe clean: receipt desktop-dark"
+    },
+    {
+      "ok": true,
+      "what": "axe clean: stats desktop-dark"
+    },
+    {
+      "ok": true,
+      "what": "Private mode: zero requests to AI hosts (desktop-dark) "
+    },
+    {
+      "ok": true,
+      "what": "no page errors (desktop-dark, model)"
+    },
+    {
+      "ok": true,
+      "what": "no horizontal scroll: start desktop-light (0px)"
+    },
+    {
+      "ok": true,
+      "what": "no AI request without consent to Cloud live (desktop-light)"
+    },
+    {
+      "ok": true,
+      "what": "no page errors (desktop-light, no model)"
+    },
+    {
+      "ok": true,
+      "what": "no horizontal scroll: choose desktop-light (0px)"
+    },
+    {
+      "ok": true,
+      "what": "the partner side says Sotto listens on this device only (desktop-light)"
+    },
+    {
+      "ok": true,
+      "what": "no horizontal scroll: say desktop-light (0px)"
+    },
+    {
+      "ok": true,
+      "what": "no horizontal scroll: ask desktop-light (0px)"
+    },
+    {
+      "ok": true,
+      "what": "Private mode: zero requests to AI hosts (desktop-light) "
+    },
+    {
+      "ok": true,
+      "what": "no page errors (desktop-light, model)"
+    },
+    {
+      "ok": true,
+      "what": "no horizontal scroll: start phone-dark (0px)"
+    },
+    {
+      "ok": true,
+      "what": "no AI request without consent to Cloud live (phone-dark)"
+    },
+    {
+      "ok": true,
+      "what": "no page errors (phone-dark, no model)"
+    },
+    {
+      "ok": true,
+      "what": "no horizontal scroll: choose phone-dark (0px)"
+    },
+    {
+      "ok": true,
+      "what": "no horizontal scroll: say phone-dark (0px)"
+    },
+    {
+      "ok": true,
+      "what": "no horizontal scroll: ask phone-dark (0px)"
+    },
+    {
+      "ok": true,
+      "what": "Private mode: zero requests to AI hosts (phone-dark) "
+    },
+    {
+      "ok": true,
+      "what": "no page errors (phone-dark, model)"
+    },
+    {
+      "ok": true,
+      "what": "no horizontal scroll: start phone-light (0px)"
+    },
+    {
+      "ok": true,
+      "what": "no AI request without consent to Cloud live (phone-light)"
+    },
+    {
+      "ok": true,
+      "what": "no page errors (phone-light, no model)"
+    },
+    {
+      "ok": true,
+      "what": "no horizontal scroll: choose phone-light (0px)"
+    },
+    {
+      "ok": true,
+      "what": "no horizontal scroll: say phone-light (0px)"
+    },
+    {
+      "ok": true,
+      "what": "no horizontal scroll: ask phone-light (0px)"
+    },
+    {
+      "ok": true,
+      "what": "Private mode: zero requests to AI hosts (phone-light) "
+    },
+    {
+      "ok": true,
+      "what": "no page errors (phone-light, model)"
+    }
+  ]
+}

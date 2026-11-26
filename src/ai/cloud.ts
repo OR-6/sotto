@@ -64,7 +64,13 @@ export function classifyCloudError(e: unknown): CloudError {
   const m = String((e as Error)?.message ?? e);
   if (/\b429\b|RESOURCE_EXHAUSTED|quota/i.test(m)) return new CloudError('Too many requests right now. Try again in a minute.', 'rate-limit');
   if (/\b401\b|\b403\b|App Check|UNAUTHENTICATED|PERMISSION_DENIED/i.test(m)) return new CloudError('The cloud refused this browser (App Check). Reload the page and try again.', 'app-check');
-  if (/fetch|network|Failed to fetch|offline|FETCH_ERROR/i.test(m)) return new CloudError('The cloud could not be reached.', 'offline');
+  if (/fetch|network|Failed to fetch|offline|FETCH_ERROR/i.test(m)) {
+    // The SDK reports a refused App Check token the same way as a network failure.
+    const online = typeof navigator === 'undefined' || navigator.onLine;
+    return online
+      ? new CloudError('The cloud did not answer this page. You are online, so App Check may not accept this site yet. The receipt shows whether anything left.', 'app-check')
+      : new CloudError('You are offline, so the cloud cannot be reached.', 'offline');
+  }
   return new CloudError(`The cloud step failed: ${m.slice(0, 160)}`, 'other');
 }
 

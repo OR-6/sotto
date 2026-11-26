@@ -30,7 +30,7 @@ export function openReceipt(): void {
       'tr',
       {},
       h('td', { class: 'tabular' }, String(s.n)),
-      h('td', {}, s.step),
+      h('td', {}, s.step, s.note && s.where !== 'on_device' ? h('div', { class: 'muted', style: 'font-size:13px' }, s.note) : null),
       h('td', {}, s.where === 'on_device' ? 'On this device' : s.where === 'in_cloud' ? 'In the cloud' : s.where === 'blocked' ? 'Blocked' : 'Failed'),
       h('td', {}, MODE_LABEL[s.mode] ?? s.mode),
       h('td', { class: 'tabular' }, formatMs(s.ms)),
