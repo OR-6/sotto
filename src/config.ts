@@ -1,4 +1,4 @@
-// Remote Config keys with in-app defaults (docs/ARCHITECTURE.md). The app works offline or
+// Remote Config keys with in-app defaults (template: remoteconfig.template.json). The app works offline or
 // when the fetch fails: the compiled-in defaults apply. The Remote Config SDK caches these
 // values in the browser; that is app configuration, never anything said in a session.
 import type { FirebaseApp } from 'firebase/app';

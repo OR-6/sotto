@@ -1,4 +1,4 @@
-// Builds the compact context block every live prompt starts with (docs/CONTENT.md §1).
+// Builds the compact context block every live prompt starts with.
 // Pure and budgeted: the result never exceeds `budgetChars`.
 import { trimTurns, type Turn } from './turns';
 

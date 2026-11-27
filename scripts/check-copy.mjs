@@ -1,4 +1,4 @@
-// check:copy (docs/PRIVACY.md, copy rules): user-facing text never claims "100% private",
+// check:copy (docs/privacy-model.md): user-facing text never claims "100% private",
 // "secure", "guaranteed" or "anonymous", and never says "private" without "Private mode"
 // on the same line. Scans the pages, the UI strings, the core copy and the README.
 import { existsSync } from 'node:fs';

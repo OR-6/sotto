@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "license": "Apache-2.0",
-  "description": "The quiet voice beside you: live help in any conversation, on your device.",
+  "description": "The quiet voice beside you: live help in English conversations, on your device.",
+  "engines": { "node": ">=22" },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build && node scripts/check-dist.mjs",

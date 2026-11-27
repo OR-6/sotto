@@ -1,4 +1,4 @@
-// Post-filters on model output (docs/CONTENT.md §2, §3). The on-device model has no
+// Post-filters on model output (Say and Ask; cases in tests/core.test.ts and src/core/redteam.ts). The on-device model has no
 // temperature control on Web, so quality comes from the constraint plus these rules.
 // Every function is pure and total: bad input gives a safe, empty-ish result, never a throw.
 import { FLAG_KINDS, type AskResult, type FlagKind } from './prompts/ask';

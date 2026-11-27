@@ -39,13 +39,20 @@ Every call site is listed in [docs/WHERE-AI-LOGIC-IS-USED.md](docs/WHERE-AI-LOGI
 
 ## Run it
 
+Needs Node 22 or later (CI uses 22; the EBADENGINE warnings some Firebase packages print on 22 are harmless).
+
 ```bash
 npm ci
-cp .env.example .env   # a Firebase web app config; on-device steps need none
+cp .env.example .env
 npm run dev
 ```
 
-`npm run typecheck`, `npm test` (unit, property and guard tests), `npm run check` (AI routing, storage, secrets, copy, attribution) and `npm run build` run in CI. `npm run e2e` drives the built app in Chromium in two worlds (no model, and a scripted stand-in for the on-device API that the test injects), runs axe on every screen at 1440 and 390 px in light and dark, and asserts that no request reaches a model host in Private mode.
+- **With `.env` left empty** the app runs fully in Private mode: Say and Ask on device (in a Chrome with the model), phrases and typing everywhere, Replay, the Safety page. Prepare, the voice pack, Summary and Cloud live mode need a Firebase project with AI Logic (Gemini Developer API), its web app config in `.env`, and App Check: a reCAPTCHA Enterprise key for your hosted domain, plus a debug token registered for localhost.
+- **The on-device model in Chrome:** desktop Chrome with Gemini Nano (tested on 158). Open `chrome://on-device-internals` to see the model's state; if it is not ready, enable the Prompt API for Gemini Nano in `chrome://flags` and let the model download. Sotto's Start screen says what this browser can do.
+- **`npm audit`** reports advisories in a Firestore dependency of the `firebase` package; Sotto never imports Firestore. Do not run `npm audit fix --force`: it downgrades `firebase` and breaks the app.
+- **Deploying:** copy `.firebaserc.example` to `.firebaserc` with your project and hosting site, then `firebase deploy --only hosting:sotto`. `remoteconfig.template.json` holds the Remote Config defaults (cloud model name, kill switch).
+
+`npm run typecheck`, `npm test` (unit, property and guard tests), `npm run check` (AI routing, storage, secrets, copy, attribution) and `npm run build` run in CI. `npm run e2e` drives the built app in Chromium in two worlds (no model, and a scripted stand-in for the on-device API that the test injects), runs axe on every screen at 1440 and 390 px in light and dark, and asserts that no request reaches a model host in Private mode. To run it: `npx playwright install chromium`, `npm run build`, `npx vite preview --port 4173 &`, then `npm run e2e`.
 
 ## Status and numbers
 
