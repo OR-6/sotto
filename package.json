@@ -20,6 +20,7 @@
     "docs:ai": "node scripts/where-ai-logic.mjs",
     "score": "node scripts/score-bench.mjs",
     "capture": "node scripts/e2e.mjs",
+    "gallery": "node scripts/gallery.mjs",
     "e2e": "node scripts/e2e.mjs"
   },
   "dependencies": {
