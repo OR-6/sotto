@@ -177,7 +177,8 @@ export function renderSession(deps: SessionDeps): SessionView {
     'header',
     { class: 'topbar' },
     h('h1', { class: 'brand' }, 'Sotto'),
-    h('span', { class: 'mode-switch', role: 'group', 'aria-label': 'Mode' }, sayBtn, askBtn),
+    // Ask needs a model; without one there is only Say with phrases and typing.
+    deps.suggestions ? h('span', { class: 'mode-switch', role: 'group', 'aria-label': 'Mode' }, sayBtn, askBtn) : null,
     receiptBtn,
     h('span', { class: 'spacer' }),
     state.speech === 'available' ? h('span', { class: 'listen-state wide-only', role: 'status' }, pulse, listenLabel) : null,
@@ -526,6 +527,7 @@ export function renderSession(deps: SessionDeps): SessionView {
         }
         break;
       case 'thinking':
+        if (!deps.suggestions) break; // no model here: no loading state that can never finish
         if (e.mode === 'say') skeleton();
         else showAsk({}, false);
         break;

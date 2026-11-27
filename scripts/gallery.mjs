@@ -42,7 +42,7 @@ const replay = async (id, steps, name) => {
 };
 await replay('clinic', 1, '2-ask-clinic-replay');
 await replay('cafe', 2, '3-say-cafe-replay');
-await replay('landlord', 3, '4-ask-landlord-flag');
+await replay('landlord', 2, '4-ask-landlord-flag');
 
 // 5. The safety rules, tested in any browser.
 await open();

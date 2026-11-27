@@ -76,14 +76,28 @@ const PURPOSE: Record<string, string> = {
 
 /** Every other request this page made, so "nothing you hear is sent" can be checked, not trusted. */
 function otherRequests(): HTMLElement {
-  const rows = [...egressGuard.others.entries()];
+  // The browser's own record of every resource this page loaded from another site (scripts,
+  // frames, fetches), so nothing the egress guard cannot see is missing from the count.
+  const counts = new Map<string, number>();
+  try {
+    for (const e of performance.getEntriesByType('resource')) {
+      const u = new URL(e.name);
+      if (u.origin !== location.origin) counts.set(u.host, (counts.get(u.host) ?? 0) + 1);
+    }
+  } catch {
+    /* resource timing unavailable */
+  }
+  for (const [host, v] of egressGuard.others) if (!counts.has(host)) counts.set(host, v.count);
+  const rows = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  const total = rows.reduce((n, [, c]) => n + c, 0);
   return h(
     'details',
     { id: 'other-requests' },
-    h('summary', {}, `Other requests this page made: ${rows.reduce((n, [, v]) => n + v.count, 0)} (none carry anything said)`),
+    h('summary', {}, `Requests to other sites since this page opened: ${total}${total ? ' (none carry anything said)' : ''}`),
     rows.length
-      ? h('table', { class: 'receipt' }, h('tbody', {}, rows.map(([host, v]) => h('tr', {}, h('td', {}, host), h('td', {}, PURPOSE[host] ?? 'app infrastructure'), h('td', { class: 'tabular' }, `${v.count} ${v.count === 1 ? 'request' : 'requests'}, ${formatBytes(v.bytes)}`)))))
+      ? h('div', { class: 'table-scroll' }, h('table', { class: 'receipt' }, h('tbody', {}, rows.map(([host, c]) => h('tr', {}, h('td', {}, host), h('td', {}, PURPOSE[host] ?? 'app infrastructure'), h('td', { class: 'tabular' }, `${c} ${c === 1 ? 'request' : 'requests'}`))))))
       : h('p', {}, 'None.'),
+    h('p', { class: 'muted' }, "Taken from the browser's own record of what this page loaded. Your browser's network panel shows the same."),
   );
 }
 

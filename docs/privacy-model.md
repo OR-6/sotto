@@ -29,7 +29,7 @@ Sotto hears conversations: medical appointments, rent negotiations, a hospital r
 
 **I3. The user decides what leaves.** Prepare sends the one line you typed. The Summary sends only the lines you tick. Ticked by default: only your own lines. What the other person said, including the flagged quotes, leaves only if you tick it. The voice pack sends only your phrases and five answers.
 
-**I4. Everything that leaves is recorded.** The receipt counts bytes at the network (after a response came back), keeps the exact text and its SHA-256 for every cloud step, and lists every other request the page made, with its purpose ([src/core/receipt.ts](../src/core/receipt.ts), [src/ui/dialogs.ts](../src/ui/dialogs.ts)).
+**I4. Everything that leaves is recorded.** The receipt counts bytes at the network (after a response came back), keeps the exact text and its SHA-256 for every cloud step, and lists every request the page made to another site (from the browser's own resource record, so scripts and frames count too), with its purpose ([src/core/receipt.ts](../src/core/receipt.ts), [src/ui/dialogs.ts](../src/ui/dialogs.ts)).
 
 **I5. Cloud output is untrusted.** Every model output is validated against its schema, capped, and rendered as text only, never as markup ([src/ui/dom.ts](../src/ui/dom.ts)).
 

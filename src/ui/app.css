@@ -122,6 +122,10 @@ main[tabindex='-1']:focus { outline: none; }
 .btn[disabled] { cursor: not-allowed; transform: none; background: transparent; border-style: dashed; border-color: var(--rim-strong); color: var(--muted); }
 .btn.primary { background: var(--amber); border-color: var(--amber); color: var(--ink); }
 .btn.primary:hover { background: #f6b856; }
+/* Disabled must look disabled, primary or not: no fill, dashed rim, muted ink. */
+.btn.primary[disabled], .btn.primary[disabled]:hover { background: transparent; border: 2px dashed var(--rim-strong); color: var(--muted); }
+.path[disabled], .path:disabled { cursor: not-allowed; border-style: dashed; background: transparent; }
+.path[disabled] strong, .path:disabled strong { color: var(--muted); }
 .btn.danger { border-color: var(--red); color: var(--red); }
 .btn.small { min-height: 56px; padding: 0 14px; font-size: 16px; }
 .chip {

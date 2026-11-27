@@ -198,6 +198,10 @@ async function run() {
           check((await page.textContent('#empty-say')).includes('cannot make suggestions'), 'the no-model session says plainly that there are no suggestions');
           await page.click('#quick button:first-child');
           check((await page.textContent('#partner-said')) === 'Yes', 'a quick phrase speaks without any model');
+          check(!(await page.isVisible('#switch-ask')), 'no Ask tab without a model');
+          await partnerSays(page, 'What can I get you?');
+          await page.waitForTimeout(400);
+          check(await page.isVisible('#empty-say'), 'without a model, a partner line leaves the plain message, not loading bars');
           await shot(page, dir, '02b-no-model-session');
           await axe(page, `no-model session ${tag}`);
         }

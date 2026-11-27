@@ -136,7 +136,7 @@ export async function cloudCall(ai: AI, req: CloudRequest, approve: Approver, re
     return { text: result.response.text(), source, ms, model: req.model, bytesOut: bytes };
   } catch (e) {
     // A failed call may still have sent the text (e.g. the reply never arrived): count what left.
-    await receipt.recordCloud({ step: req.step, mode: req.mode, ms: performance.now() - t0, where: 'failed', outgoing: outText, bytes: sentBytes(), note: String((e as Error)?.message ?? e).slice(0, 120) });
+    await receipt.recordCloud({ step: req.step, mode: req.mode, ms: performance.now() - t0, where: 'failed', outgoing: outText, bytes: sentBytes(), note: classifyCloudError(e).message }); // the plain reason, never the SDK's raw text (it names the project)
     throw classifyCloudError(e);
   } finally {
     disarm();

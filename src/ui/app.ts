@@ -264,6 +264,11 @@ function resetSession(clearReceipt = true) {
 }
 
 export async function boot(container: HTMLElement): Promise<void> {
+  try {
+    performance.setResourceTimingBufferSize(2000); // the receipt counts every request; keep them all
+  } catch {
+    /* not supported */
+  }
   applyTheme();
   loadVoice();
   const resume = new URLSearchParams(location.search).has('resume') ? load<ResumeState | null>('resume', null) : null;

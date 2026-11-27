@@ -19,7 +19,7 @@ export function capabilityLines(): HTMLElement {
     s === 'available'
       ? line('yes', 'On-device speech: English installed.')
       : s === 'downloadable' || s === 'downloading'
-        ? line('wait', 'On-device speech: English, installs when you start.')
+        ? line('no', 'On-device speech is not installed in this browser yet. The other person can type instead.')
         : line('no', 'No on-device speech here. The other person can type instead.');
   const voices = state.voices > 0 ? line('yes', `Offline voices: ${state.voices}.`) : line('no', 'No offline voice. Chosen lines are shown in large type instead.');
   return h('section', { class: 'cap', 'aria-labelledby': 'cap-title' }, h('h2', { id: 'cap-title' }, 'On this device'), model, speech, voices);

@@ -9,6 +9,11 @@ Sotto listens to the people talking to you and, on your own device, gives you th
 
 **The stance.** Sotto is for the person with less power in the room: the patient, the tenant, the one who cannot speak fast enough. It is not for cheating in interviews, winning arguments or recording anyone. It shows a visible listening state, records no audio, keeps nothing you did not save, and asks you to tell the other person it is listening.
 
+| | |
+|---|---|
+| ![Ask, recorded on device: the knee MRI result in plain words and the question to ask](gallery/2-ask-clinic-replay.png) | ![The hybrid split: before and after in the cloud, the live part on the device](gallery/6-hybrid-split.png) |
+| ![Say, recorded on device: three things to say at a café counter, steered with "cold"](gallery/3-say-cafe-replay.png) | ![The safety rules, tested in any browser](gallery/5-safety.png) |
+
 ## Why it is hybrid by nature
 
 A live conversation copilot runs a model on every sentence said to you, hundreds of times an hour. In the cloud that is too slow, too costly, and unacceptable in a medical appointment. On the device it is fast, free and stays in the room. The cloud has a different job: before and after.
